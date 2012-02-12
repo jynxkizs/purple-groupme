@@ -18,11 +18,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "GroupmeAccount.h"
+#include "GroupMeAccount.h"
 #include "groupme_connection.h"
 #include <zlib.h>
 
-static void groupme_attempt_connection(GroupmeConnection *);
+static void groupme_attempt_connection(GroupMeConnection *);
 
 static gchar *groupme_gunzip(const guchar *gzip_data, ssize_t *len_ptr)
 {
@@ -100,7 +100,7 @@ static gchar *groupme_gunzip(const guchar *gzip_data, ssize_t *len_ptr)
   return output_data;
 }
 
-void groupme_connection_destroy(GroupmeConnection *conn)
+void groupme_connection_destroy(GroupMeConnection *conn)
 {
   conn->na->conns = g_slist_remove(conn->na->conns, conn);
   
@@ -127,7 +127,7 @@ void groupme_connection_destroy(GroupmeConnection *conn)
   g_free(conn);
 }
 
-static void groupme_update_cookies(GroupmeAccount *na, const gchar *headers)
+static void groupme_update_cookies(GroupMeAccount *na, const gchar *headers)
 {
   const gchar *cookie_start;
   const gchar *cookie_end;
@@ -161,7 +161,7 @@ static void groupme_update_cookies(GroupmeAccount *na, const gchar *headers)
     }
 }
 
-static void groupme_connection_process_data(GroupmeConnection *conn)
+static void groupme_connection_process_data(GroupMeConnection *conn)
 {
   ssize_t len;
   gchar *tmp;
@@ -207,7 +207,7 @@ static void groupme_connection_process_data(GroupmeConnection *conn)
   g_free(tmp);
 }
 
-static void groupme_fatal_connection_cb(GroupmeConnection *conn)
+static void groupme_fatal_connection_cb(GroupMeConnection *conn)
 {
   PurpleConnection *pc = conn->na->pc;
 
@@ -227,7 +227,7 @@ static void groupme_fatal_connection_cb(GroupmeConnection *conn)
 static void groupme_post_or_get_readdata_cb(gpointer data, gint source,
 					   PurpleInputCondition cond)
 {
-  GroupmeConnection *conn;
+  GroupMeConnection *conn;
   gchar buf[4096];
   ssize_t len;
   
@@ -303,7 +303,7 @@ static void groupme_post_or_get_ssl_readdata_cb (gpointer data,
 static void groupme_post_or_get_connect_cb(gpointer data, gint source,
 					  const gchar *error_message)
 {
-  GroupmeConnection *conn;
+  GroupMeConnection *conn;
   ssize_t len;
   
   conn = data;
@@ -332,7 +332,7 @@ static void groupme_post_or_get_ssl_connect_cb(gpointer data,
 					      PurpleSslConnection *ssl, 
 					      PurpleInputCondition cond)
 {
-  GroupmeConnection *conn;
+  GroupMeConnection *conn;
   ssize_t len;
   
   conn = data;
@@ -353,7 +353,7 @@ static void groupme_host_lookup_cb(GSList *hosts, gpointer data,
   struct sockaddr_in *addr;
   gchar *hostname;
   gchar *ip_address;
-  GroupmeAccount *na;
+  GroupMeAccount *na;
   PurpleDnsQueryData *query;
   
   purple_debug_info("groupme", "updating cache of dns addresses\n");
@@ -426,7 +426,7 @@ static void groupme_cookie_foreach_cb(gchar *cookie_name,
 }
 
 
-static gchar *groupme_cookies_to_string(GroupmeAccount *na)
+static gchar *groupme_cookies_to_string(GroupMeAccount *na)
 {
   GString *str;
 
@@ -442,7 +442,7 @@ static void groupme_ssl_connection_error(PurpleSslConnection *ssl,
 					PurpleSslErrorType errortype, 
 					gpointer data)
 {
-  GroupmeConnection *conn = data;
+  GroupMeConnection *conn = data;
   PurpleConnection *pc = conn->na->pc;
 
   conn->ssl_conn = NULL;
@@ -450,17 +450,17 @@ static void groupme_ssl_connection_error(PurpleSslConnection *ssl,
   purple_connection_ssl_error(pc, errortype);
 }
 
-void groupme_post_or_get(GroupmeAccount *na, 
-			GroupmeMethod method,
+void groupme_post_or_get(GroupMeAccount *na, 
+			GroupMeMethod method,
 			const gchar *host, const gchar *url, 
 			const gchar *postdata,
-			GroupmeProxyCallbackFunc callback_func, 
+			GroupMeProxyCallbackFunc callback_func, 
 			gpointer user_data,
 			gboolean keepalive)
 {
   GString *request;
   gchar *cookies;
-  GroupmeConnection *conn;
+  GroupMeConnection *conn;
   gchar *real_url;
   gboolean is_proxy = FALSE;
   const gchar *user_agent;
@@ -601,7 +601,7 @@ void groupme_post_or_get(GroupmeAccount *na,
       }
     }
 
-  conn = g_new0(GroupmeConnection, 1);
+  conn = g_new0(GroupMeConnection, 1);
   conn->na = na;
   conn->method = method;
   conn->hostname = g_strdup(host);
@@ -617,9 +617,9 @@ void groupme_post_or_get(GroupmeAccount *na,
   groupme_attempt_connection(conn);
 }
 
-static void groupme_attempt_connection(GroupmeConnection *conn)
+static void groupme_attempt_connection(GroupMeConnection *conn)
 {
-  GroupmeAccount *na = conn->na;
+  GroupMeAccount *na = conn->na;
 
   if (conn->method & GROUPME_METHOD_SSL) {
     conn->ssl_conn = purple_ssl_connect(na->account, conn->hostname,
