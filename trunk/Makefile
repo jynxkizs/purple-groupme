@@ -28,8 +28,8 @@ GROUPME_SOURCES =  libgroupme.c \
 		   GroupMeAccount.c \
 		   GroupMeAccount.h \
 		   GroupMeLog.h \
-		   GroupMeChat.c \
-		   GroupMeChat.h \
+		   GroupMePod.c \
+		   GroupMePod.h \
 		   GroupMeProtocol.c \
 		   GroupMeProtocol.h \
 		   GroupMeUpdate.c \
