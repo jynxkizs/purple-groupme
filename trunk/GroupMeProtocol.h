@@ -1,7 +1,7 @@
 /*
- * libbeluga
+ * libgroupme
  *
- * libbeluga is the property of its developers.  See the COPYRIGHT file
+ * libgroupme is the property of its developers.  See the COPYRIGHT file
  * for more details.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,73 +18,73 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef BELUGA_PROTOCOL_H
-#define BELUGA_PROTOCOL_H
+#ifndef GROUPME_PROTOCOL_H
+#define GROUPME_PROTOCOL_H
 
-#include "libbeluga.h"
-
-void
-PurpleBelugaCheckVersion(BelugaAccount *account);
+#include "libgroupme.h"
 
 void
-BelugaSetBuddyIcon(BelugaAccount *account,
-		   BelugaPod *pod,
+PurpleGroupMeCheckVersion(GroupMeAccount *account);
+
+void
+GroupMeSetBuddyIcon(GroupMeAccount *account,
+		   GroupMePod *pod,
 		   gchar *data, gsize data_len);
 
 void
-BelugaConnect(PurpleAccount *account);
+GroupMeConnect(PurpleAccount *account);
 
 void
-BelugaDisconnect(BelugaAccount *account);
+GroupMeDisconnect(GroupMeAccount *account);
 
 void
-BelugaCreatePod(BelugaAccount *account);
+GroupMeCreatePod(GroupMeAccount *account);
 
 void
-BelugaCheckNewPods(BelugaAccount *account);
+GroupMeCheckNewPods(GroupMeAccount *account);
 
 void
-BelugaPodSetName(BelugaAccount *account,
-		 BelugaPod *pod,
+GroupMePodSetName(GroupMeAccount *account,
+		 GroupMePod *pod,
 		 const gchar *name);
 
 void
-BelugaPodSetLocation(BelugaAccount *account,
-		     BelugaPod *pod,
+GroupMePodSetLocation(GroupMeAccount *account,
+		     GroupMePod *pod,
 		     const gchar *location);
 
 void
-BelugaPodSetAddress(BelugaAccount *account,
-		    BelugaPod *pod,
+GroupMePodSetAddress(GroupMeAccount *account,
+		    GroupMePod *pod,
 		    const gchar *address);
 
 void
-BelugaPodAddMembers(BelugaAccount *account, 
-		    BelugaPod *pod, 
+GroupMePodAddMembers(GroupMeAccount *account, 
+		    GroupMePod *pod, 
 		    gchar *argsString);
 
 void
-BelugaPodRemoveMembers(BelugaAccount *account,
-		    BelugaPod *pod, 
+GroupMePodRemoveMembers(GroupMeAccount *account,
+		    GroupMePod *pod, 
 		    gchar *argsString);
 
 void
-BelugaPodRemoveMember(BelugaAccount *account,
-		      BelugaPod *pod,
+GroupMePodRemoveMember(GroupMeAccount *account,
+		      GroupMePod *pod,
 		      const gchar *uid);
 
 void
-BelugaPodLeave(BelugaAccount *account,
-	       BelugaPod *pod);
+GroupMePodLeave(GroupMeAccount *account,
+	       GroupMePod *pod);
 
 void
-BelugaHintMsg(BelugaAccount *account,
-	      BelugaPod *pod,
+GroupMeHintMsg(GroupMeAccount *account,
+	      GroupMePod *pod,
 	      const gchar *msg);
 
 void
-BelugaSendMessage(BelugaAccount *account,
+GroupMeSendMessage(GroupMeAccount *account,
 		  const char *podId,
 		  const char *msg);
 
-#endif /* BELUGA_PROTOCOL_H */
+#endif /* GROUPME_PROTOCOL_H */

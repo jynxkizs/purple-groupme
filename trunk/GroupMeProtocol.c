@@ -1,7 +1,7 @@
 /*
- * libbeluga
+ * libgroupme
  *
- * libbeluga is the property of its developers.  See the COPYRIGHT file
+ * libgroupme is the property of its developers.  See the COPYRIGHT file
  * for more details.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,63 +19,63 @@
  */
 
 #include "prpl.h"
-#include "BelugaAccount.h"
-#include "BelugaLog.h"
-#include "BelugaPod.h"
-#include "BelugaProtocol.h"
-#include "BelugaUpdate.h"
-#include "beluga_connection.h"
-#include "beluga_json.h"
-#include "beluga_html.h"
+#include "GroupMeAccount.h"
+#include "GroupMeLog.h"
+#include "GroupMePod.h"
+#include "GroupMeProtocol.h"
+#include "GroupMeUpdate.h"
+#include "groupme_connection.h"
+#include "groupme_json.h"
+#include "groupme_html.h"
 
 // constants
-#define BLIST_GROUP_NAME "Beluga Pods"
+#define BLIST_GROUP_NAME "GroupMe Pods"
 
 // global variables
 gboolean gCheckedVersion = FALSE;
 
 // Forward Declarations
-PurpleGroup *BelugaGetBuddyGroup();
-void BelugaAddBuddy(BelugaAccount *account, BelugaPod *pod);
-void BelugaUpdateBuddy(BelugaAccount *account, BelugaPod *pod);
-void BelugaRemoveBuddy(BelugaAccount *account, BelugaPod *pod);
+PurpleGroup *GroupMeGetBuddyGroup();
+void GroupMeAddBuddy(GroupMeAccount *account, GroupMePod *pod);
+void GroupMeUpdateBuddy(GroupMeAccount *account, GroupMePod *pod);
+void GroupMeRemoveBuddy(GroupMeAccount *account, GroupMePod *pod);
 void GH_RemoveBuddy(gpointer key, gpointer value, gpointer user_data);
-void BelugaSetBuddyIcon(BelugaAccount *account, BelugaPod *pod, gchar *data, gsize data_len);
-void BelugaDebugMsg(BelugaAccount *account, BelugaPod *pod, const gchar *msgText);
-void BelugaHelpMsg(BelugaAccount *account, BelugaPod *pod, const gchar *msgText);
-void BelugaDisplayNewUpdates(BelugaAccount *account, BelugaPod *pod);
+void GroupMeSetBuddyIcon(GroupMeAccount *account, GroupMePod *pod, gchar *data, gsize data_len);
+void GroupMeDebugMsg(GroupMeAccount *account, GroupMePod *pod, const gchar *msgText);
+void GroupMeHelpMsg(GroupMeAccount *account, GroupMePod *pod, const gchar *msgText);
+void GroupMeDisplayNewUpdates(GroupMeAccount *account, GroupMePod *pod);
 //
-void PurpleBelugaCheckVersionCB(BelugaAccount *account, gchar const *requestUrl, gchar *json, gsize jsonLen, gpointer userData);
-void BelugaContactHost(BelugaAccount *account);
-void BelugaSeedAccount(BelugaAccount *account);
-void BelugaGetPodDetails(BelugaAccount *account, BelugaPod *pod);
-void BelugaSeedPod(BelugaAccount *account, BelugaPod *pod);
-void BelugaPodImage(BelugaAccount *account, BelugaPod *pod);
-void BelugaRetryPollNewUpdates(BelugaAccount *account, BelugaPod *pod);
-void BelugaPollNewUpdates(BelugaAccount *account, BelugaPod *pod);
-void BelugaUpdateDetails(BelugaAccount *account, BelugaPod *pod, BelugaUpdate *update);
-void BelugaPodAddMember(BelugaAccount *account, BelugaPod *pod, gchar *member);
-void BelugaSendNextMessage(BelugaAccount *account, BelugaPod *pod);
-gboolean BelugaSeedAccountTO(gpointer data);
-gboolean BelugaRetryPollNewUpdatesTO(gpointer data);
-gboolean BelugaCatchupPodTO(gpointer data);
-void BelugaContactHostCB(BelugaAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
-void BelugaLoginCB(BelugaAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
-void BelugaSeedAccountCB(BelugaAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
-void BelugaGetPodDetailsCB(BelugaAccount *account, gchar const *requestUrl, gchar *data, gsize dataLen, gpointer userData);
-void BelugaSeedPodCB(BelugaAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
-void BelugaPodImageCB(BelugaAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
-void BelugaPollNewUpdatesCB(BelugaAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
-void BelugaUpdateDetailsCB(BelugaAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
-void BelugaUpdatePhotoCB(BelugaAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
-void BelugaCreatePodCB(BelugaAccount *account, gchar const *requestUrl, gchar *data, gsize dataLen, gpointer userData);
-void BelugaSendNextMessageCB(BelugaAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
+void PurpleGroupMeCheckVersionCB(GroupMeAccount *account, gchar const *requestUrl, gchar *json, gsize jsonLen, gpointer userData);
+void GroupMeContactHost(GroupMeAccount *account);
+void GroupMeSeedAccount(GroupMeAccount *account);
+void GroupMeGetPodDetails(GroupMeAccount *account, GroupMePod *pod);
+void GroupMeSeedPod(GroupMeAccount *account, GroupMePod *pod);
+void GroupMePodImage(GroupMeAccount *account, GroupMePod *pod);
+void GroupMeRetryPollNewUpdates(GroupMeAccount *account, GroupMePod *pod);
+void GroupMePollNewUpdates(GroupMeAccount *account, GroupMePod *pod);
+void GroupMeUpdateDetails(GroupMeAccount *account, GroupMePod *pod, GroupMeUpdate *update);
+void GroupMePodAddMember(GroupMeAccount *account, GroupMePod *pod, gchar *member);
+void GroupMeSendNextMessage(GroupMeAccount *account, GroupMePod *pod);
+gboolean GroupMeSeedAccountTO(gpointer data);
+gboolean GroupMeRetryPollNewUpdatesTO(gpointer data);
+gboolean GroupMeCatchupPodTO(gpointer data);
+void GroupMeContactHostCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
+void GroupMeLoginCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
+void GroupMeSeedAccountCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
+void GroupMeGetPodDetailsCB(GroupMeAccount *account, gchar const *requestUrl, gchar *data, gsize dataLen, gpointer userData);
+void GroupMeSeedPodCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
+void GroupMePodImageCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
+void GroupMePollNewUpdatesCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
+void GroupMeUpdateDetailsCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
+void GroupMeUpdatePhotoCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
+void GroupMeCreatePodCB(GroupMeAccount *account, gchar const *requestUrl, gchar *data, gsize dataLen, gpointer userData);
+void GroupMeSendNextMessageCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
 
 // Request Callback Data
 typedef struct RequestData_t {
-  BelugaAccount *account;
-  BelugaPod *pod;
-  BelugaUpdate *update;
+  GroupMeAccount *account;
+  GroupMePod *pod;
+  GroupMeUpdate *update;
   gint index;
 } RequestData;
 
@@ -92,7 +92,7 @@ RequestDataClone(RequestData *request)
 }
 
 PurpleGroup *
-BelugaGetBuddyGroup()
+GroupMeGetBuddyGroup()
 {
   PurpleGroup *buddyGroup;
 
@@ -105,8 +105,8 @@ BelugaGetBuddyGroup()
     return NULL;
   }
 
-  // create a Beluga group
-  BelugaLogInfo("beluga", "Creating Beluga group...\n");
+  // create a GroupMe group
+  GroupMeLogInfo("groupme", "Creating GroupMe group...\n");
   buddyGroup = purple_group_new(BLIST_GROUP_NAME);
   purple_blist_add_group(buddyGroup, NULL);
   purple_blist_node_set_flags(&buddyGroup->node, 
@@ -115,8 +115,8 @@ BelugaGetBuddyGroup()
 }
 
 void
-BelugaAddBuddy(BelugaAccount *account,
-	       BelugaPod *pod)
+GroupMeAddBuddy(GroupMeAccount *account,
+	       GroupMePod *pod)
 {
   PurpleBuddy *buddy;
   const char *available;
@@ -125,7 +125,7 @@ BelugaAddBuddy(BelugaAccount *account,
   buddy = purple_find_buddy(account->account, 
 			    pod->id);
   if (!buddy) {
-    BelugaLogInfo("beluga", 
+    GroupMeLogInfo("groupme", 
 		  "creating buddy %s (%s)\n",
 		  pod->title,
 		  pod->id);
@@ -135,7 +135,7 @@ BelugaAddBuddy(BelugaAccount *account,
 			     pod->title);
     buddy->proto_data = (void *)pod;
     purple_blist_add_buddy(buddy, NULL, 
-			   BelugaGetBuddyGroup(), NULL);
+			   GroupMeGetBuddyGroup(), NULL);
     purple_blist_node_set_flags(&buddy->node,
 				PURPLE_BLIST_NODE_FLAG_NO_SAVE);
   }
@@ -143,7 +143,7 @@ BelugaAddBuddy(BelugaAccount *account,
   // set status as available
   available = purple_primitive_get_id_from_type(PURPLE_STATUS_AVAILABLE);
   if (!available) {
-    purple_debug_fatal("beluga", 
+    purple_debug_fatal("groupme", 
   		       "No id for PURPLE_STATUS_AVAILABLE!");
     return;
   }
@@ -154,12 +154,12 @@ BelugaAddBuddy(BelugaAccount *account,
 }
 
 void
-BelugaUpdateBuddy(BelugaAccount *account,
-		  BelugaPod *pod)
+GroupMeUpdateBuddy(GroupMeAccount *account,
+		  GroupMePod *pod)
 {
   PurpleBuddy *buddy;
 
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"updating buddy %s (%s)\n",
 		pod->title,
 		pod->id);
@@ -168,7 +168,7 @@ BelugaUpdateBuddy(BelugaAccount *account,
   buddy = purple_find_buddy(account->account, 
 			    pod->id);
   if (!buddy) {
-    BelugaAddBuddy(account, pod);
+    GroupMeAddBuddy(account, pod);
     return;
   }
 
@@ -181,14 +181,14 @@ BelugaUpdateBuddy(BelugaAccount *account,
 }
 
 void
-BelugaRemoveBuddy(BelugaAccount *account,
-		  BelugaPod *pod)
+GroupMeRemoveBuddy(GroupMeAccount *account,
+		  GroupMePod *pod)
 {
   PurpleConversation *conv;
   PurpleBuddy *buddy;
 
-  BelugaLogInfo("beluga",
-		"BelugaRemoveBuddy(%s)",
+  GroupMeLogInfo("groupme",
+		"GroupMeRemoveBuddy(%s)",
 		pod->title);
 
   // get conversation for buddy if exists
@@ -203,7 +203,7 @@ BelugaRemoveBuddy(BelugaAccount *account,
   buddy = purple_find_buddy(account->account, 
 			    pod->id);
   if (!buddy) {
-    BelugaLogInfo("beluga", 
+    GroupMeLogInfo("groupme", 
 		  "no buddy %s (%s)\n",
 		  pod->title,
 		  pod->id);
@@ -220,13 +220,13 @@ GH_RemoveBuddy(gpointer key,
 	       gpointer value, 
 	       gpointer user_data)
 {
-  BelugaRemoveBuddy((BelugaAccount *)user_data,
-		    (BelugaPod *)value);
+  GroupMeRemoveBuddy((GroupMeAccount *)user_data,
+		    (GroupMePod *)value);
 }
 
 void
-BelugaSetBuddyIcon(BelugaAccount *account,
-		   BelugaPod *pod,
+GroupMeSetBuddyIcon(GroupMeAccount *account,
+		   GroupMePod *pod,
 		   gchar *data, gsize data_len)
 {
   data = g_memdup(data, data_len);
@@ -237,14 +237,14 @@ BelugaSetBuddyIcon(BelugaAccount *account,
 }
 
 void
-BelugaDebugMsg(BelugaAccount *account,
-	       BelugaPod *pod,
+GroupMeDebugMsg(GroupMeAccount *account,
+	       GroupMePod *pod,
 	       const gchar *msgText)
 {
   PurpleConversation *conv;
   PurpleMessageFlags msgFlags;  
 
-  if (!BelugaAccountDebug(account)) {
+  if (!GroupMeAccountDebug(account)) {
     return;
   }
 
@@ -261,15 +261,15 @@ BelugaDebugMsg(BelugaAccount *account,
 
   msgFlags = PURPLE_MESSAGE_ERROR; // SYSTEM, NOTIFY, RAW
   purple_conv_im_write(conv->u.im, 
-		       "purple-beluga", 
+		       "purple-groupme", 
 		       msgText,
 		       msgFlags,
 		       time(NULL));
 }
 
 void
-BelugaHintMsg(BelugaAccount *account,
-	      BelugaPod *pod,
+GroupMeHintMsg(GroupMeAccount *account,
+	      GroupMePod *pod,
 	      const gchar *msgText)
 {
   PurpleConversation *conv;
@@ -288,19 +288,19 @@ BelugaHintMsg(BelugaAccount *account,
 
   msgFlags = PURPLE_MESSAGE_SYSTEM | PURPLE_MESSAGE_RAW;
   purple_conv_im_write(conv->u.im, 
-		       "purple-beluga", 
+		       "purple-groupme", 
 		       msgText,
 		       msgFlags,
 		       time(NULL));
 }
 
 void
-BelugaDisplayNewUpdates(BelugaAccount *account,
-			BelugaPod *pod)
+GroupMeDisplayNewUpdates(GroupMeAccount *account,
+			GroupMePod *pod)
 {
   PurpleConversation *conv;
   RequestData *newRequest;
-  BelugaUpdate *update;
+  GroupMeUpdate *update;
   gchar *msgText;
   time_t msgTime;
   PurpleMessageFlags msgFlags;  
@@ -319,9 +319,9 @@ BelugaDisplayNewUpdates(BelugaAccount *account,
   }
 
   updatePodDetails = FALSE;
-  while (BelugaPodHasUpdate(pod, pod->nextUpdateDisplayed)) {
-    update = BelugaPodGetUpdate(pod, pod->nextUpdateDisplayed);
-    msgText = BelugaUpdateDisplayText(account,
+  while (GroupMePodHasUpdate(pod, pod->nextUpdateDisplayed)) {
+    update = GroupMePodGetUpdate(pod, pod->nextUpdateDisplayed);
+    msgText = GroupMeUpdateDisplayText(account,
 				      pod,
 				      update);
 
@@ -332,7 +332,7 @@ BelugaDisplayNewUpdates(BelugaAccount *account,
     msgFlags = PURPLE_MESSAGE_RECV;
     msgFlags |= isFromLocalUser?PURPLE_MESSAGE_NICK:0;
     msgFlags |= update->isDelayed?PURPLE_MESSAGE_DELAYED:0;
-    BelugaLogMisc("beluga", "msg: %s (%s):\n\t%s\n",
+    GroupMeLogMisc("groupme", "msg: %s (%s):\n\t%s\n",
 		  update->name, update->uid, update->text);
 
     purple_conv_im_write(conv->u.im, 
@@ -351,66 +351,66 @@ BelugaDisplayNewUpdates(BelugaAccount *account,
   }
 
   if (updatePodDetails) {
-    BelugaGetPodDetails(account, pod);
+    GroupMeGetPodDetails(account, pod);
   }
 
   if (pod->nextUpdateDisplayed < pod->lastUpdateReceived) {
-    BelugaDebugMsg(account, pod, "Recieved updates out of order.");
+    GroupMeDebugMsg(account, pod, "Recieved updates out of order.");
     // we have dropped updates or received them out of order  
     // wait 3 seconds, and if we are still missing updates
     // we will fetch them actively
     if (!pod->catchupPodTimeout) {
-      BelugaDebugMsg(account, pod, "Waiting for missing updates.");
+      GroupMeDebugMsg(account, pod, "Waiting for missing updates.");
       newRequest = g_new0(RequestData, 1);
       newRequest->account = account;
       newRequest->pod = pod;
       pod->catchupPodTimeout = 
 	purple_timeout_add_seconds(3,
-				   BelugaCatchupPodTO,
+				   GroupMeCatchupPodTO,
 				   (gpointer)newRequest);
     }
   }
 }
 
 void
-PurpleBelugaCheckVersionAutomatically(BelugaAccount *account)
+PurpleGroupMeCheckVersionAutomatically(GroupMeAccount *account)
 {
-  BelugaLogInfo("beluga", "CheckVersionAutomatically\n");
+  GroupMeLogInfo("groupme", "CheckVersionAutomatically\n");
  
   if (gCheckedVersion == TRUE) {
     return;
   }
-  if (BelugaAccountCheckVersion(account) != TRUE) {
+  if (GroupMeAccountCheckVersion(account) != TRUE) {
     return;
   }
 
   // get version data
   gCheckedVersion = TRUE;
-  beluga_post_or_get(account, 
-		     BELUGA_METHOD_GET, 
-		     "purple-beluga.googlecode.com", 
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_GET, 
+		     "purple-groupme.googlecode.com", 
 		     "/svn/trunk/VERSION",
-		     NULL, PurpleBelugaCheckVersionCB, 
+		     NULL, PurpleGroupMeCheckVersionCB, 
 		     (gpointer)TRUE, FALSE);
 }
 
 void
-PurpleBelugaCheckVersion(BelugaAccount *account)
+PurpleGroupMeCheckVersion(GroupMeAccount *account)
 {
-  BelugaLogInfo("beluga", "CheckVersion\n");
+  GroupMeLogInfo("groupme", "CheckVersion\n");
  
   // get version data
   gCheckedVersion = TRUE;
-  beluga_post_or_get(account, 
-		     BELUGA_METHOD_GET, 
-		     "purple-beluga.googlecode.com", 
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_GET, 
+		     "purple-groupme.googlecode.com", 
 		     "/svn/trunk/VERSION",
-		     NULL, PurpleBelugaCheckVersionCB, 
+		     NULL, PurpleGroupMeCheckVersionCB, 
 		     (gpointer)FALSE, FALSE);
 }
 
 void
-PurpleBelugaCheckVersionCB(BelugaAccount *account, 
+PurpleGroupMeCheckVersionCB(GroupMeAccount *account, 
 			   gchar const *requestUrl, 
 			   gchar *data, gsize dataLen, 
 			   gpointer userData)
@@ -427,36 +427,36 @@ PurpleBelugaCheckVersionCB(BelugaAccount *account,
   gint major, minor, revision;
   gboolean automaticCheck;
 
-  BelugaLogInfo("beluga", "CheckVersionCB\n");
+  GroupMeLogInfo("groupme", "CheckVersionCB\n");
   automaticCheck = (gboolean)userData;
 
   json = data;
   json = json_object_seek(json);
   if (!json) {
-    BelugaLogWarn("beluga", "no root object\n");
+    GroupMeLogWarn("groupme", "no root object\n");
     return;
   }
 
   json = json_object_pair_value(json, "versions");
   if (!json) {
-    BelugaLogWarn("beluga", "no versions field\n");
+    GroupMeLogWarn("groupme", "no versions field\n");
     return;
   }
 
   json = json_array_seek(json);
   if (!json) {
-    BelugaLogWarn("beluga", "version not-array\n");
+    GroupMeLogWarn("groupme", "version not-array\n");
     return;
   }
 
   // parse all of the updates
   current = TRUE;
-  text = g_strdup_printf("Download <a href=\"http://code.google.com/p/purple-beluga/downloads/list\">here.</a>");
-  BelugaLogInfo("beluga", "current version %d.%d.%d\n", 
-		BELUGA_PLUGIN_VERSION_MAJOR,
-		BELUGA_PLUGIN_VERSION_MINOR,
-		BELUGA_PLUGIN_VERSION_REVISION);
-  allowBeta = BelugaAccountAllowBetaVersions(account);
+  text = g_strdup_printf("Download <a href=\"http://code.google.com/p/purple-groupme/downloads/list\">here.</a>");
+  GroupMeLogInfo("groupme", "current version %d.%d.%d\n", 
+		GROUPME_PLUGIN_VERSION_MAJOR,
+		GROUPME_PLUGIN_VERSION_MINOR,
+		GROUPME_PLUGIN_VERSION_REVISION);
+  allowBeta = GroupMeAccountAllowBetaVersions(account);
   for (json = json_object_seek(json_array_contents(json));
        json != NULL;
        json = json_object_seek(json_token_seek(json))) {
@@ -464,15 +464,15 @@ PurpleBelugaCheckVersionCB(BelugaAccount *account,
     minor = json_object_pair_value_int(json, "minor");
     revision = json_object_pair_value_int(json, "revision");
     isBeta = json_object_pair_value_string_equals(json, "status", "beta");
-    BelugaLogInfo("beluga", "checking version %d.%d.%d\n", 
+    GroupMeLogInfo("groupme", "checking version %d.%d.%d\n", 
 		  major, minor, revision);
     if ((!isBeta || allowBeta) &&
-	((major > BELUGA_PLUGIN_VERSION_MAJOR) ||
-	 ((major == BELUGA_PLUGIN_VERSION_MAJOR) &&
-	  ((minor > BELUGA_PLUGIN_VERSION_MINOR) ||
-	   ((minor == BELUGA_PLUGIN_VERSION_MINOR) &&
-	    ((revision > BELUGA_PLUGIN_VERSION_REVISION))))))) {
-      BelugaLogMisc("beluga", "new!\n");
+	((major > GROUPME_PLUGIN_VERSION_MAJOR) ||
+	 ((major == GROUPME_PLUGIN_VERSION_MAJOR) &&
+	  ((minor > GROUPME_PLUGIN_VERSION_MINOR) ||
+	   ((minor == GROUPME_PLUGIN_VERSION_MINOR) &&
+	    ((revision > GROUPME_PLUGIN_VERSION_REVISION))))))) {
+      GroupMeLogMisc("groupme", "new!\n");
       status = json_object_pair_value_string_dup(json, "status");
       current = FALSE;
       tmp = g_strdup_printf("%s<br/><br/><i>Version %d.%d.%d (%s):</i>", text, 
@@ -485,7 +485,7 @@ PurpleBelugaCheckVersionCB(BelugaAccount *account,
 	   changeJson != NULL;
 	   changeJson = json_string_seek(json_token_seek(changeJson))) {
 	change = json_string_dup(changeJson);
-	BelugaLogMisc("beluga", "change: %s\n", change);
+	GroupMeLogMisc("groupme", "change: %s\n", change);
 	tmp = g_strdup_printf("%s<br/>%s", text, change);
 	g_free(change);
 	g_free(text);
@@ -496,18 +496,18 @@ PurpleBelugaCheckVersionCB(BelugaAccount *account,
   
   // display popup informing user of update
   if (current == FALSE) {
-    purple_notify_formatted(belugaPlugin, 
-			    "purple-beluga Update",
-			    "A new version of purple-beluga is available.", 
+    purple_notify_formatted(groupmePlugin, 
+			    "purple-groupme Update",
+			    "A new version of purple-groupme is available.", 
 			    (automaticCheck==FALSE)?"":
 			    "\n (automatic update check can be disabled in Account Settings)", 
 			    text,
 			    NULL, NULL);
   } else if (automaticCheck == FALSE) {
-    purple_notify_message(belugaPlugin, 
+    purple_notify_message(groupmePlugin, 
 			  PURPLE_NOTIFY_MSG_INFO, 
-			  "purple-beluga is up-to-date",
-			  "Your purple-beluga plugin is up-to-date.", 
+			  "purple-groupme is up-to-date",
+			  "Your purple-groupme plugin is up-to-date.", 
 			  NULL, NULL, NULL);
   }
 
@@ -515,17 +515,17 @@ PurpleBelugaCheckVersionCB(BelugaAccount *account,
 }
 
 void
-BelugaConnect(PurpleAccount *pa)
+GroupMeConnect(PurpleAccount *pa)
 {
   PurpleConnection *pc;
-  BelugaAccount *account;
+  GroupMeAccount *account;
   
-  BelugaLogInfo("beluga", "Connecting\n");
+  GroupMeLogInfo("groupme", "Connecting\n");
   pc = purple_account_get_connection(pa);
   purple_connection_set_state(pc, PURPLE_CONNECTING);
 
   // create a new account
-  account = BelugaAccountNew();
+  account = GroupMeAccountNew();
   account->account = pa;
   account->pc = pc;
   account->cookie_table = 
@@ -540,27 +540,27 @@ BelugaConnect(PurpleAccount *pa)
 			  g_free);
   pa->gc->proto_data = account;
 
-  // check if there is a new version of purple-beluga
-  PurpleBelugaCheckVersionAutomatically(account);
+  // check if there is a new version of purple-groupme
+  PurpleGroupMeCheckVersionAutomatically(account);
 
   // start connection process
-  BelugaContactHost(account);
+  GroupMeContactHost(account);
 }
 
 void
-BelugaDisconnect(BelugaAccount *account)
+GroupMeDisconnect(GroupMeAccount *account)
 {
   PurpleDnsQueryData *dns_query;
   const gchar *host;
 
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"disabling account %s\n",
 		account->name);
 
   // send logout to server
-  host = BelugaAccountHost(account);
-  beluga_post_or_get(account, 
-		     BELUGA_METHOD_GET, 
+  host = GroupMeAccountHost(account);
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_GET, 
 		     host, "/logout", 
 		     NULL, NULL, 
 		     NULL, FALSE);
@@ -574,16 +574,16 @@ BelugaDisconnect(BelugaAccount *account)
   purple_blist_remove_account(account->account);
 
   // destroy incomplete connections
-  BelugaLogMisc("beluga", 
+  GroupMeLogMisc("groupme", 
 		"destroying %d incomplete connections\n",
 		g_slist_length(account->conns));
   while (account->conns != NULL)
-    beluga_connection_destroy(account->conns->data);
+    groupme_connection_destroy(account->conns->data);
   
   // cancel outstanding dns queries
   while (account->dns_queries != NULL) {
     dns_query = account->dns_queries->data;
-    BelugaLogMisc("beluga", 
+    GroupMeLogMisc("groupme", 
 		  "canceling dns query for %s\n",
 		  purple_dnsquery_get_host(dns_query));
     account->dns_queries = g_slist_remove(account->dns_queries, 
@@ -602,36 +602,36 @@ BelugaDisconnect(BelugaAccount *account)
   g_free(account->_xsrf);
 
   // free the account
-  BelugaAccountFree(account);
+  GroupMeAccountFree(account);
 }
 
 void
-BelugaContactHost(BelugaAccount *account)
+GroupMeContactHost(GroupMeAccount *account)
 {
   const gchar *host;
 
-  BelugaLogInfo("beluga", "ContactHost\n");
+  GroupMeLogInfo("groupme", "ContactHost\n");
   purple_connection_update_progress(account->pc, 
 				    _("Contacting host..."), 
 				    1, 4);
  
   // get login page
-  host = BelugaAccountHost(account);
+  host = GroupMeAccountHost(account);
   if (host == NULL || host[0] == '\0') {
     purple_connection_error(account->pc, _("Host not set"));
     return;
   }
   
-  beluga_post_or_get(account, 
-		     BELUGA_METHOD_GET | 
-		     BELUGA_METHOD_SSL, 
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_GET | 
+		     GROUPME_METHOD_SSL, 
 		     host, "/login", 
-		     NULL, BelugaContactHostCB, 
+		     NULL, GroupMeContactHostCB, 
 		     NULL, TRUE);  
 }
 
 void
-BelugaContactHostCB(BelugaAccount *account, 
+GroupMeContactHostCB(GroupMeAccount *account, 
 		    gchar const *requestUrl, 
 		    gchar *html, gsize htmlLen, 
 		    gpointer userData)
@@ -642,13 +642,13 @@ BelugaContactHostCB(BelugaAccount *account,
   gchar *encodedUser;
   gchar *encodedPass;
   
-  BelugaLogInfo("beluga", "ContactHostCB\n");
+  GroupMeLogInfo("groupme", "ContactHostCB\n");
 
-  // pull the host's Beluga account id from the cookie
+  // pull the host's GroupMe account id from the cookie
   _xsrf = g_hash_table_lookup(account->cookie_table, 
 			      "_xsrf");
   if (!_xsrf) {
-      BelugaLogError("beluga", "_xsrf not found\n");
+      GroupMeLogError("groupme", "_xsrf not found\n");
       purple_connection_error(account->pc, 
 			      _("_xsrf not found"));
       return;
@@ -671,23 +671,23 @@ BelugaContactHostCB(BelugaAccount *account,
   g_free(encodedPass);
 
   // post the login data to log in
-  host = BelugaAccountHost(account);
-  beluga_post_or_get(account, 
-		     BELUGA_METHOD_POST | 
-		     BELUGA_METHOD_SSL,
+  host = GroupMeAccountHost(account);
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_POST | 
+		     GROUPME_METHOD_SSL,
 		     host, "/login", 
-		     postData, BelugaLoginCB, 
+		     postData, GroupMeLoginCB, 
 		     NULL, TRUE);
   g_free(postData);
 }
 
 void
-BelugaLoginCB(BelugaAccount *account, 
+GroupMeLoginCB(GroupMeAccount *account, 
 	      gchar const *requestUrl, 
 	      gchar *html, gsize htmlLen, 
 	      gpointer userData)
 {
-  BelugaLogInfo("beluga", "LoginCB\n");
+  GroupMeLogInfo("groupme", "LoginCB\n");
 	
   // we're logged into the website now
   purple_connection_update_progress(account->pc, 
@@ -695,69 +695,69 @@ BelugaLoginCB(BelugaAccount *account,
 				    3, 4);
   
   //load the homepage to grab the pod info
-  BelugaSeedAccount(account);
+  GroupMeSeedAccount(account);
   // check again periodically for new pods
   account->seedTimeout = purple_timeout_add_seconds(60,
-						    BelugaSeedAccountTO,
+						    GroupMeSeedAccountTO,
 						    (gpointer)account);
 }
 
 void
-BelugaCheckNewPods(BelugaAccount *account)
+GroupMeCheckNewPods(GroupMeAccount *account)
 {
-  BelugaSeedAccount(account);
+  GroupMeSeedAccount(account);
 }
 
-gboolean BelugaSeedAccountTO(gpointer data)
+gboolean GroupMeSeedAccountTO(gpointer data)
 {
-  BelugaSeedAccount((BelugaAccount *)data);
+  GroupMeSeedAccount((GroupMeAccount *)data);
   return TRUE;
 }
 
 void
-BelugaSeedAccount(BelugaAccount *account)
+GroupMeSeedAccount(GroupMeAccount *account)
 {
   const gchar *host;
-  BelugaLogInfo("beluga", "BelugaSeedAccount\n");
+  GroupMeLogInfo("groupme", "GroupMeSeedAccount\n");
 	
   //load the homepage to grab the pod info
-  host = BelugaAccountHost(account);
-  beluga_post_or_get(account, 
-		     BELUGA_METHOD_GET, 
+  host = GroupMeAccountHost(account);
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_GET, 
 		     host, "/pods", 
-		     NULL, BelugaSeedAccountCB, 
+		     NULL, GroupMeSeedAccountCB, 
 		     NULL, TRUE);
 }
 
 
 void
-BelugaSeedAccountCB(BelugaAccount *account, 
+GroupMeSeedAccountCB(GroupMeAccount *account, 
 		    gchar const *requestUrl, 
 		    gchar *data, gsize dataLen, 
 		    gpointer userData)
 {
-  BelugaPod *newPod;
+  GroupMePod *newPod;
   const gchar *html;
   const gchar *error;
 
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"SeedAccountCB(%s)\n",
 		account->name);
 
   html = data;
   if (!html) {
-    BelugaLogError("beluga", "no seedaccount data\n");
+    GroupMeLogError("groupme", "no seedaccount data\n");
     purple_connection_error(account->pc, 
 			    _("No account info"));
     return;
   }
   
   // we've got our account info & pods!
-  BelugaLogInfo("beluga", "Connected!\n");
+  GroupMeLogInfo("groupme", "Connected!\n");
   purple_connection_notice(account->pc, 
-			   "Connected to Beluga!");
+			   "Connected to GroupMe!");
 
-  BelugaAccountFromHtml(account, html);
+  GroupMeAccountFromHtml(account, html);
   if (account->uid) {
     purple_connection_set_state(account->pc, 
 				PURPLE_CONNECTED);
@@ -774,32 +774,32 @@ BelugaSeedAccountCB(BelugaAccount *account,
   }
 
   // setup buddies for pods
-  while ((newPod = BelugaPodFromHtml(html, &html))) {
-    BelugaLogInfo("beluga", 
+  while ((newPod = GroupMePodFromHtml(html, &html))) {
+    GroupMeLogInfo("groupme", 
 		  "FoundPod %s (%s)\n", 
 		  newPod->title,
 		  newPod->id);
-    if (BelugaAccountHasPod(account, newPod->id)) {
-      BelugaLogInfo("beluga", "pod already exists, skipping.\n");
-      BelugaPodFree(newPod);
+    if (GroupMeAccountHasPod(account, newPod->id)) {
+      GroupMeLogInfo("groupme", "pod already exists, skipping.\n");
+      GroupMePodFree(newPod);
     } else {
-      BelugaLogInfo("beluga", "adding pod.\n");
-      BelugaAddBuddy(account, newPod);
-      BelugaAccountAddPod(account, newPod);
-      BelugaDebugMsg(account, newPod, "Connected to Pod...");
-      BelugaPodGeneratePhotoPath(account, newPod);
-      BelugaPodImage(account, newPod);
-      BelugaSeedPod(account, newPod);
-      BelugaPollNewUpdates(account, newPod);
+      GroupMeLogInfo("groupme", "adding pod.\n");
+      GroupMeAddBuddy(account, newPod);
+      GroupMeAccountAddPod(account, newPod);
+      GroupMeDebugMsg(account, newPod, "Connected to Pod...");
+      GroupMePodGeneratePhotoPath(account, newPod);
+      GroupMePodImage(account, newPod);
+      GroupMeSeedPod(account, newPod);
+      GroupMePollNewUpdates(account, newPod);
     }
   }
 }
 
-gboolean BelugaCatchupPodTO(gpointer data)
+gboolean GroupMeCatchupPodTO(gpointer data)
 {
   RequestData *request;
-  BelugaAccount *account;
-  BelugaPod *pod;
+  GroupMeAccount *account;
+  GroupMePod *pod;
 
   request = (RequestData *)data;
   account = request->account;
@@ -808,16 +808,16 @@ gboolean BelugaCatchupPodTO(gpointer data)
   pod->catchupPodTimeout = 0;
 
   if (pod->nextUpdateDisplayed < pod->lastUpdateReceived) {
-    BelugaDebugMsg(account, pod, "Giving up.");
-    BelugaSeedPod(account, pod);
+    GroupMeDebugMsg(account, pod, "Giving up.");
+    GroupMeSeedPod(account, pod);
   }
 
   return FALSE;
 }
 
 void
-BelugaGetPodDetails(BelugaAccount *account, 
-		    BelugaPod *pod)
+GroupMeGetPodDetails(GroupMeAccount *account, 
+		    GroupMePod *pod)
 {
   RequestData *newRequest;
   const gchar *host;
@@ -825,19 +825,19 @@ BelugaGetPodDetails(BelugaAccount *account,
   int lastread;
   int n;
 
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"GetPodDetails(%s)\n",
 		pod->title);
 	
   // how many updates should we fetch to seed the pod
   if (pod->nextUpdateDisplayed == 0) {
     // this is an initial fetch
-    BelugaDebugMsg(account, pod, "Fetching recent history for chat.");
+    GroupMeDebugMsg(account, pod, "Fetching recent history for chat.");
     lastread = -1;
-    n = BelugaAccountSeedFetchCount(account);
+    n = GroupMeAccountSeedFetchCount(account);
   } else {
     // we are trying to catch up on missing updates
-    BelugaDebugMsg(account, pod, "Getting pod details or missing updates.");
+    GroupMeDebugMsg(account, pod, "Getting pod details or missing updates.");
     lastread = pod->lastUpdateReceived;
     n = (pod->lastUpdateReceived - pod->nextUpdateDisplayed + 1);
     n += 5; // for good measure
@@ -847,29 +847,29 @@ BelugaGetPodDetails(BelugaAccount *account,
   newRequest = g_new0(RequestData, 1);
   newRequest->account = account;
   newRequest->pod = pod;
-  host = BelugaAccountHost(account);
+  host = GroupMeAccountHost(account);
   //api/pods/getPod?n=50&v=3&start=128&podid=4de21d23e694aa6c05004dfd&lastread=-1
   url = g_strdup_printf("/api/pods/getPod?v=3&podid=%s&lastread=%d&n=%d", 
 			purple_url_encode(pod->id), 
 			lastread,
 			n);
-  beluga_post_or_get(account, 
-		     BELUGA_METHOD_GET, 
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_GET, 
 		     host, url,
-		     NULL, BelugaGetPodDetailsCB, 
+		     NULL, GroupMeGetPodDetailsCB, 
 		     newRequest, TRUE);
   g_free(url);
 }
 
 void 
-BelugaGetPodDetailsCB(BelugaAccount *account, 
+GroupMeGetPodDetailsCB(GroupMeAccount *account, 
 		      gchar const *requestUrl, 
 		      gchar *data, gsize dataLen, 
 		      gpointer userData)
 {
   RequestData *request;
-  BelugaPod *pod;
-  //BelugaUpdate *newUpdate;
+  GroupMePod *pod;
+  //GroupMeUpdate *newUpdate;
   const gchar *json;
   const gchar *root;
   const gchar *result;
@@ -882,36 +882,36 @@ BelugaGetPodDetailsCB(BelugaAccount *account,
   pod = request->pod;
   g_free(request);
 
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"GetPodDetailsCB(%s)\n",
 		pod->title);
-  //BelugaLogMisc("beluga", "%s", data);
+  //GroupMeLogMisc("groupme", "%s", data);
 
   // look for json result
   json = data;
   if (!json) {
-    BelugaLogWarn("beluga", "bad createPod response");
+    GroupMeLogWarn("groupme", "bad createPod response");
     return;
   }
   
   root = json_object_seek(json);
   if (!root) {
-    BelugaLogWarn("beluga", "no root object\n");
+    GroupMeLogWarn("groupme", "no root object\n");
     return;
   }
 
   result = json_object_pair_value(root, "result");
   if (!result) {
-    BelugaLogWarn("beluga", "no result field\n");
+    GroupMeLogWarn("groupme", "no result field\n");
 
     // check if user has been removed from pod
     if (json_object_pair_value_string_equals(root, 
 					     "error",
 					     "user not authorized")) {
-      BelugaLogWarn("beluga", "user has been removed from pod\n");
-      BelugaRemoveBuddy(account, pod);
-      BelugaAccountRemovePod(account, pod);
-      //BelugaPodDestroyPhotoPath(account, newPod);
+      GroupMeLogWarn("groupme", "user has been removed from pod\n");
+      GroupMeRemoveBuddy(account, pod);
+      GroupMeAccountRemovePod(account, pod);
+      //GroupMePodDestroyPhotoPath(account, newPod);
       return;
     }
 
@@ -920,52 +920,52 @@ BelugaGetPodDetailsCB(BelugaAccount *account,
 
   what = json_object_pair_value_string_dup(result, "what");
   if (what[0]) {
-    BelugaPodSetTitle(pod, what);
+    GroupMePodSetTitle(pod, what);
   }
   g_free(what);
 
   where = json_object_pair_value_string_dup(result, "where");
   if (where[0]) {
-    //BelugaPodSetLocation(pod, where);
+    //GroupMePodSetLocation(pod, where);
   }
   g_free(where);
 
   when = json_object_pair_value_string_dup(result, "when");
   if (when[0]) {
-    //BelugaPodSetTime(pod, when);
+    //GroupMePodSetTime(pod, when);
   }
   g_free(when);
 
   ihash = json_object_pair_value_string_dup(result, "ihash");
   if (ihash[0] && g_ascii_strncasecmp(ihash, pod->ihash, strlen(ihash))) {
-    BelugaPodSetIHash(pod, ihash);
-    BelugaPodImage(account, pod);
+    GroupMePodSetIHash(pod, ihash);
+    GroupMePodImage(account, pod);
   }
   g_free(ihash);
 
-  BelugaUpdateBuddy(account, pod);
+  GroupMeUpdateBuddy(account, pod);
 }
 
 void
-BelugaSeedPod(BelugaAccount *account, BelugaPod *pod)
+GroupMeSeedPod(GroupMeAccount *account, GroupMePod *pod)
 { 
   RequestData *newRequest;
   const gchar *host;
   gchar *url;
   int seedFetchCount;
 
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"SeedPod(%s)\n",
 		pod->title);
 	
   // how many updates should we fetch to seed the pod
   if (pod->nextUpdateDisplayed == 0) {
     // this is an initial fetch
-    BelugaDebugMsg(account, pod, "Fetching recent history for chat.");
-    seedFetchCount = BelugaAccountSeedFetchCount(account);
+    GroupMeDebugMsg(account, pod, "Fetching recent history for chat.");
+    seedFetchCount = GroupMeAccountSeedFetchCount(account);
   } else {
     // we are trying to catch up on missing updates
-    BelugaDebugMsg(account, pod, "Re-fetching recent history.");
+    GroupMeDebugMsg(account, pod, "Re-fetching recent history.");
     seedFetchCount = (pod->lastUpdateReceived - pod->nextUpdateDisplayed + 1);
     seedFetchCount += 10; // for good measure
   }
@@ -974,27 +974,27 @@ BelugaSeedPod(BelugaAccount *account, BelugaPod *pod)
   newRequest = g_new0(RequestData, 1);
   newRequest->account = account;
   newRequest->pod = pod;
-  host = BelugaAccountHost(account);
+  host = GroupMeAccountHost(account);
   url = g_strdup_printf("/pod/%s?n=%d", 
 			purple_url_encode(pod->id), 
 			seedFetchCount);
-  beluga_post_or_get(account, 
-		     BELUGA_METHOD_GET, 
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_GET, 
 		     host, url,
-		     NULL, BelugaSeedPodCB, 
+		     NULL, GroupMeSeedPodCB, 
 		     newRequest, TRUE);
   g_free(url);
 }
 
 void 
-BelugaSeedPodCB(BelugaAccount *account, 
+GroupMeSeedPodCB(GroupMeAccount *account, 
 		gchar const *requestUrl, 
 		gchar *data, gsize dataLen, 
 		gpointer userData)
 {
   RequestData *request;
-  BelugaPod *pod;
-  BelugaUpdate *newUpdate;
+  GroupMePod *pod;
+  GroupMeUpdate *newUpdate;
   const gchar *html;
   gint lastIndex;
 
@@ -1002,29 +1002,29 @@ BelugaSeedPodCB(BelugaAccount *account,
   pod = request->pod;
   g_free(request);
 
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"SeedPodCB(%s)\n",
 		pod->title);
-  //BelugaLogMisc("beluga", "response:\n%s", data);
+  //GroupMeLogMisc("groupme", "response:\n%s", data);
 
   html = data;
   if (!html) {
-    BelugaLogWarn("beluga", "bad seed response");
+    GroupMeLogWarn("groupme", "bad seed response");
     return;
   }
 
   // parse results
-  BelugaDebugMsg(account, pod, "Got recent history results.");
+  GroupMeDebugMsg(account, pod, "Got recent history results.");
   // maybe should search for "realmessages" flag first
   lastIndex = 0;
-  while ((newUpdate = BelugaUpdateFromHtml(html, &html))) {
-    if (BelugaPodHasUpdate(pod, newUpdate->index)) {
-      BelugaUpdateFree(newUpdate);
+  while ((newUpdate = GroupMeUpdateFromHtml(html, &html))) {
+    if (GroupMePodHasUpdate(pod, newUpdate->index)) {
+      GroupMeUpdateFree(newUpdate);
     } else {
       newUpdate->isDelayed = TRUE;
-      BelugaPodAddUpdate(pod, newUpdate);
+      GroupMePodAddUpdate(pod, newUpdate);
       if (newUpdate->hasPhoto) {
-	BelugaUpdateDetails(account,
+	GroupMeUpdateDetails(account,
 			    pod,
 			    newUpdate);
       }
@@ -1040,60 +1040,60 @@ BelugaSeedPodCB(BelugaAccount *account,
   }
 
   if (pod->nextUpdateDisplayed == 0) {
-    BelugaHintMsg(account, pod, 
+    GroupMeHintMsg(account, pod, 
 		  "type /help to get a list of pod commands");
   }
 
   // display any new updates we may have gotten
-  BelugaDisplayNewUpdates(account, pod);
+  GroupMeDisplayNewUpdates(account, pod);
 }
 
 void
-BelugaRetryPollNewUpdates(BelugaAccount *account,
-		       BelugaPod *pod)
+GroupMeRetryPollNewUpdates(GroupMeAccount *account,
+		       GroupMePod *pod)
 {
   RequestData *newRequest;
   newRequest = g_new0(RequestData, 1);
   newRequest->account = account;
   newRequest->pod = pod;
 
-  BelugaDebugMsg(account, pod, 
+  GroupMeDebugMsg(account, pod, 
 		 "Scheduling retry poll for updates...");
 
   pod->retryPollPodTimeout = 
     purple_timeout_add_seconds(60,
-			       BelugaRetryPollNewUpdatesTO,
+			       GroupMeRetryPollNewUpdatesTO,
 			       (gpointer)newRequest);
 }
 
 gboolean 
-BelugaRetryPollNewUpdatesTO(gpointer data)
+GroupMeRetryPollNewUpdatesTO(gpointer data)
 { 
   RequestData *request;
   request = (RequestData *)data;
 
-  BelugaDebugMsg(request->account, request->pod, 
+  GroupMeDebugMsg(request->account, request->pod, 
 		 "Retrying poll for updates...");
 
   request->pod->retryPollPodTimeout = 0;
   // Pickup lost messages
-  BelugaSeedPod(request->account, request->pod);
+  GroupMeSeedPod(request->account, request->pod);
   // Pickup new messages
-  BelugaPollNewUpdates(request->account, request->pod);
+  GroupMePollNewUpdates(request->account, request->pod);
 
   g_free(request);
   return FALSE;
 }
 
 void
-BelugaPollNewUpdates(BelugaAccount *account,
-		     BelugaPod *pod)
+GroupMePollNewUpdates(GroupMeAccount *account,
+		     GroupMePod *pod)
 {
   RequestData *newRequest;
   const gchar *host;
   gchar *url;
   
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"PollNewUpdates(%s)\n",
 		pod->title);
   
@@ -1101,27 +1101,27 @@ BelugaPollNewUpdates(BelugaAccount *account,
   newRequest = g_new0(RequestData, 1);
   newRequest->account = account;
   newRequest->pod = pod;
-  host = BelugaAccountHost(account);
+  host = GroupMeAccountHost(account);
   url = g_strdup_printf("/api/poll/newUpdates?podid=%s", 
 			  purple_url_encode(pod->id));
-  beluga_post_or_get(account, 
-		     BELUGA_METHOD_GET, 
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_GET, 
 		     host, url,
-		     NULL, BelugaPollNewUpdatesCB, 
+		     NULL, GroupMePollNewUpdatesCB, 
 		     newRequest, TRUE);
   g_free(url);
 }
 
 
 void 
-BelugaPollNewUpdatesCB(BelugaAccount *account, 
+GroupMePollNewUpdatesCB(GroupMeAccount *account, 
 		       gchar const *requestUrl, 
 		       gchar *data, gsize dataLen, 
 		       gpointer userData)
 {
   RequestData *request;
-  BelugaPod *pod;
-  BelugaUpdate *newUpdate;
+  GroupMePod *pod;
+  GroupMeUpdate *newUpdate;
   const gchar *json;
   const gchar *root;
   const gchar *result;
@@ -1130,49 +1130,49 @@ BelugaPollNewUpdatesCB(BelugaAccount *account,
   pod = request->pod;
   g_free(request);
 
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"PollNewUpdatesCB(%s)\n",
 		pod->title);
-  //BelugaLogMisc("beluga", "response:\n%s", data);
+  //GroupMeLogMisc("groupme", "response:\n%s", data);
 
   // look for json result
   if (!data) {
-    BelugaLogWarn("beluga", "bad poll response, no data");
-    BelugaRetryPollNewUpdates(account, pod);
+    GroupMeLogWarn("groupme", "bad poll response, no data");
+    GroupMeRetryPollNewUpdates(account, pod);
     return;
   }
   
   root = json_object_seek(data);
   if (!root) {
-    BelugaLogWarn("beluga", "no root json object\n");
-    BelugaRetryPollNewUpdates(account, pod);
+    GroupMeLogWarn("groupme", "no root json object\n");
+    GroupMeRetryPollNewUpdates(account, pod);
     return;
   }
 
   result = json_object_pair_value(root, "result");
   if (!result) {
-    BelugaLogWarn("beluga", "no result field\n");
+    GroupMeLogWarn("groupme", "no result field\n");
 
     // check if user has been removed from pod
     if (json_object_pair_value_string_equals(root, 
 					     "error",
 					     "user not authorized")) {
-      BelugaLogWarn("beluga", "user has been removed from pod\n");
-      BelugaRemoveBuddy(account, pod);
-      BelugaAccountRemovePod(account, pod);
-      //BelugaPodDestroyPhotoPath(account, newPod);
+      GroupMeLogWarn("groupme", "user has been removed from pod\n");
+      GroupMeRemoveBuddy(account, pod);
+      GroupMeAccountRemovePod(account, pod);
+      //GroupMePodDestroyPhotoPath(account, newPod);
       return;
     }
 
     // unhandled response, retry
-    BelugaRetryPollNewUpdates(account, pod);
+    GroupMeRetryPollNewUpdates(account, pod);
     return;
   }
 
   json = json_array_seek(result);
   if (!json) {
-    BelugaLogWarn("beluga", "result not-array\n");
-    BelugaRetryPollNewUpdates(account, pod);
+    GroupMeLogWarn("groupme", "result not-array\n");
+    GroupMeRetryPollNewUpdates(account, pod);
     return;
   }
 
@@ -1181,13 +1181,13 @@ BelugaPollNewUpdatesCB(BelugaAccount *account,
        json != NULL;
        json = json_object_seek(json_token_seek(json))) {
     
-    newUpdate = BelugaUpdateFromJson(json);
-    if (BelugaPodHasUpdate(pod, newUpdate->index)) {
-      BelugaUpdateFree(newUpdate);
+    newUpdate = GroupMeUpdateFromJson(json);
+    if (GroupMePodHasUpdate(pod, newUpdate->index)) {
+      GroupMeUpdateFree(newUpdate);
     } else {
-      BelugaPodAddUpdate(pod, newUpdate);
+      GroupMePodAddUpdate(pod, newUpdate);
       if (newUpdate->hasPhoto) {
-	BelugaUpdateDetails(account,
+	GroupMeUpdateDetails(account,
 			    pod,
 			    newUpdate);
       }
@@ -1198,20 +1198,20 @@ BelugaPollNewUpdatesCB(BelugaAccount *account,
   }
   
   // display any new updates we may have gotten
-  BelugaDisplayNewUpdates(account, pod);
+  GroupMeDisplayNewUpdates(account, pod);
 
   // poll again for new updates
-  BelugaPollNewUpdates(account, pod);
+  GroupMePollNewUpdates(account, pod);
 }
 
 void
-BelugaPodImage(BelugaAccount *account,
-	       BelugaPod *pod)
+GroupMePodImage(GroupMeAccount *account,
+	       GroupMePod *pod)
 {
   RequestData *newRequest;
   const gchar *host;
   
-  purple_debug_info("beluga", 
+  purple_debug_info("groupme", 
 		    "PodImage(%s, %s)\n",
 		    pod->id, 
 		    pod->imageUrl);
@@ -1221,16 +1221,16 @@ BelugaPodImage(BelugaAccount *account,
   newRequest = g_new0(RequestData, 1);
   newRequest->account = account;
   newRequest->pod = pod;
-  host = BelugaAccountHost(account);
-  beluga_post_or_get(account, 
-		     BELUGA_METHOD_GET, 
+  host = GroupMeAccountHost(account);
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_GET, 
 		     host, pod->imageUrl,
-		     NULL, BelugaPodImageCB, 
+		     NULL, GroupMePodImageCB, 
 		     newRequest, TRUE);
 }
 
 void 
-BelugaPodImageCB(BelugaAccount *account, 
+GroupMePodImageCB(GroupMeAccount *account, 
 		 gchar const *requestUrl, 
 		 gchar *data, gsize dataLen, 
 		 gpointer userData)
@@ -1238,12 +1238,12 @@ BelugaPodImageCB(BelugaAccount *account,
   RequestData *request;
 
   request = (RequestData *)userData;
-  BelugaLogInfo("beluga",
+  GroupMeLogInfo("groupme",
 		"PodImageCB(%s)\n",
 		request->pod->id);
 
   // read details
-  BelugaPodImageFromPngData(request->account,
+  GroupMePodImageFromPngData(request->account,
 			    request->pod,
 			    data, dataLen);
 
@@ -1251,15 +1251,15 @@ BelugaPodImageCB(BelugaAccount *account,
 }
 
 void
-BelugaUpdateDetails(BelugaAccount *account,
-		    BelugaPod *pod,
-		    BelugaUpdate *update)
+GroupMeUpdateDetails(GroupMeAccount *account,
+		    GroupMePod *pod,
+		    GroupMeUpdate *update)
 {
   RequestData *newRequest;
   const gchar *host;
   gchar *url;
   
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"UpdateDetails(%s, %d)\n",
 		pod->id, update->index);
   
@@ -1269,20 +1269,20 @@ BelugaUpdateDetails(BelugaAccount *account,
   newRequest->pod = pod;
   newRequest->update = update;
   newRequest->index = update->index;
-  host = BelugaAccountHost(account);
+  host = GroupMeAccountHost(account);
   url = g_strdup_printf("/details/%s/%d",
 			purple_url_encode(pod->id),
 			update->index);
-  beluga_post_or_get(account, 
-		     BELUGA_METHOD_GET, 
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_GET, 
 		     host, url, 
-		     NULL, BelugaUpdateDetailsCB, 
+		     NULL, GroupMeUpdateDetailsCB, 
 		     newRequest, TRUE);
   g_free(url);
 }
 
 void 
-BelugaUpdateDetailsCB(BelugaAccount *account, 
+GroupMeUpdateDetailsCB(GroupMeAccount *account, 
 		      const gchar *requestUrl,
 		      gchar *html, gsize htmlLen, 
 		      gpointer userData)
@@ -1292,25 +1292,25 @@ BelugaUpdateDetailsCB(BelugaAccount *account,
   const gchar *host;
 
   request = (RequestData *)userData;
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"UpdateDetailsCB(%s, %d)\n",
 		request->pod->id, 
 		request->index);
 
   // read details
-  BelugaUpdateDetailsFromHtml(request->update,
+  GroupMeUpdateDetailsFromHtml(request->update,
 			      html);
 
   // process details
   //fetch photo for this update
   if (request->update->photoUrl) {
-    BelugaDebugMsg(account, request->pod, "Fetching photo.");
-    host = BelugaAccountHost(request->account);
+    GroupMeDebugMsg(account, request->pod, "Fetching photo.");
+    host = GroupMeAccountHost(request->account);
     newRequest = RequestDataClone(request);  
-    beluga_post_or_get(request->account, 
-		       BELUGA_METHOD_GET, 
+    groupme_post_or_get(request->account, 
+		       GROUPME_METHOD_GET, 
 		       host, request->update->photoUrl,
-		       NULL, BelugaUpdatePhotoCB, 
+		       NULL, GroupMeUpdatePhotoCB, 
 		       newRequest, TRUE);
   }
 
@@ -1318,7 +1318,7 @@ BelugaUpdateDetailsCB(BelugaAccount *account,
 }
 
 void 
-BelugaUpdatePhotoCB(BelugaAccount *account, 
+GroupMeUpdatePhotoCB(GroupMeAccount *account, 
 		    gchar const *requestUrl, 
 		    gchar *data, gsize dataLen, 
 		    gpointer userData)
@@ -1326,14 +1326,14 @@ BelugaUpdatePhotoCB(BelugaAccount *account,
   RequestData *request;
 
   request = (RequestData *)userData;
-  BelugaLogInfo("beluga",
+  GroupMeLogInfo("groupme",
 		"UpdatePhotoCB(%s, %d)\n",
 		request->pod->id, 
 		request->index);
 
   // read details
-  BelugaDebugMsg(account, request->pod, "Got photo.");
-  BelugaUpdatePhotoFromJpegData(request->pod,
+  GroupMeDebugMsg(account, request->pod, "Got photo.");
+  GroupMeUpdatePhotoFromJpegData(request->pod,
 				request->update,
 				data, dataLen);
 
@@ -1341,14 +1341,14 @@ BelugaUpdatePhotoCB(BelugaAccount *account,
 }
 
 void
-BelugaCreatePod(BelugaAccount *account)
+GroupMeCreatePod(GroupMeAccount *account)
 {
   const gchar *host;
   gchar *encodedName;
   gchar *encodedEmails;
   gchar *postData;
 
-  BelugaLogMisc("beluga", "CreatePod()\n");
+  GroupMeLogMisc("groupme", "CreatePod()\n");
 
   // form post data
   encodedName = g_strdup(purple_url_encode("New Pod"));
@@ -1361,76 +1361,76 @@ BelugaCreatePod(BelugaAccount *account)
   g_free(encodedEmails);
   
   // send request
-  host = BelugaAccountHost(account);
-  beluga_post_or_get(account, 
-		     BELUGA_METHOD_POST, 
+  host = GroupMeAccountHost(account);
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_POST, 
 		     host, "/api/pods/createPod", 
 		     postData,
-		     BelugaCreatePodCB, NULL,
+		     GroupMeCreatePodCB, NULL,
 		     TRUE);
   g_free(postData);
 }
 
 void 
-BelugaCreatePodCB(BelugaAccount *account, 
+GroupMeCreatePodCB(GroupMeAccount *account, 
 		  gchar const *requestUrl, 
 		  gchar *data, gsize dataLen, 
 		  gpointer userData)
 { 
-  BelugaPod *newPod; 
+  GroupMePod *newPod; 
   const gchar *json;
 
-  BelugaLogMisc("beluga", "CreatePodCB()\n");
-  //BelugaLogMisc("beluga", "response:\n%s", data);
+  GroupMeLogMisc("groupme", "CreatePodCB()\n");
+  //GroupMeLogMisc("groupme", "response:\n%s", data);
 
   // look for json result
   json = data;
   if (!json) {
-    BelugaLogWarn("beluga", "bad createPod response");
+    GroupMeLogWarn("groupme", "bad createPod response");
     return;
   }
   
   json = json_object_seek(json);
   if (!json) {
-    BelugaLogWarn("beluga", "no root object\n");
+    GroupMeLogWarn("groupme", "no root object\n");
     return;
   }
 
   json = json_object_pair_value(json, "result");
   if (!json) {
-    BelugaLogWarn("beluga", "no result field\n");
+    GroupMeLogWarn("groupme", "no result field\n");
     return;
   }
 
   // setup buddy for pod
-  newPod = BelugaPodFromJson(json, &json);
+  newPod = GroupMePodFromJson(json, &json);
   if (!newPod) {
-    BelugaLogWarn("beluga", "result is not valid pod json\n");
+    GroupMeLogWarn("groupme", "result is not valid pod json\n");
     return;
   }
 
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"FoundPod %s (%s)\n", 
 		newPod->title,
 		newPod->id);
-  if (BelugaAccountHasPod(account, newPod->id)) {
-    BelugaLogInfo("beluga", "pod already exists, skipping.\n");
-    BelugaPodFree(newPod);
+  if (GroupMeAccountHasPod(account, newPod->id)) {
+    GroupMeLogInfo("groupme", "pod already exists, skipping.\n");
+    GroupMePodFree(newPod);
   } else {
-    BelugaLogInfo("beluga", "adding pod.\n");
-    BelugaAddBuddy(account, newPod);
-    BelugaAccountAddPod(account, newPod);
-    BelugaDebugMsg(account, newPod, "Connected to Pod...");
-    BelugaPodGeneratePhotoPath(account, newPod);
-    BelugaPodImage(account, newPod);
-    BelugaSeedPod(account, newPod);
-    BelugaPollNewUpdates(account, newPod);
+    GroupMeLogInfo("groupme", "adding pod.\n");
+    GroupMeAddBuddy(account, newPod);
+    GroupMeAccountAddPod(account, newPod);
+    GroupMeDebugMsg(account, newPod, "Connected to Pod...");
+    GroupMePodGeneratePhotoPath(account, newPod);
+    GroupMePodImage(account, newPod);
+    GroupMeSeedPod(account, newPod);
+    GroupMePollNewUpdates(account, newPod);
   }
 }
 
 void
-BelugaPodSetName(BelugaAccount *account,
-		  BelugaPod *pod,
+GroupMePodSetName(GroupMeAccount *account,
+		  GroupMePod *pod,
 		  const gchar *name)
 {
   const gchar *host;
@@ -1438,11 +1438,11 @@ BelugaPodSetName(BelugaAccount *account,
   gchar *url;
   gchar *encodedName;
   
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"PodSetName(%s, %s)\n",
 		pod->id, name);
   
-  host = BelugaAccountHost(account);
+  host = GroupMeAccountHost(account);
   url = g_strdup_printf("/api/pods/modifyPod");
   encodedName = g_strdup(purple_url_encode(name));
   postData = g_strdup_printf("v=3&_xsrf=%s&podid=%s&what=%s",
@@ -1450,8 +1450,8 @@ BelugaPodSetName(BelugaAccount *account,
 			     pod->id,
 			     encodedName);
   g_free(encodedName);
-  beluga_post_or_get(account, 
-		     BELUGA_METHOD_POST, 
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_POST, 
 		     host, url, 
 		     postData, NULL, 
 		     NULL, FALSE);
@@ -1460,8 +1460,8 @@ BelugaPodSetName(BelugaAccount *account,
 }
 
 void
-BelugaPodSetLocation(BelugaAccount *account,
-		     BelugaPod *pod,
+GroupMePodSetLocation(GroupMeAccount *account,
+		     GroupMePod *pod,
 		     const gchar *location)
 {
   const gchar *host;
@@ -1469,11 +1469,11 @@ BelugaPodSetLocation(BelugaAccount *account,
   gchar *url;
   gchar *encodedLocation;
   
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"PodSetLocation(%s, %s)\n",
 		pod->id, location);
   
-  host = BelugaAccountHost(account);
+  host = GroupMeAccountHost(account);
   url = g_strdup_printf("/api/pods/modifyPod");
   encodedLocation = g_strdup(purple_url_encode(location));
   postData = g_strdup_printf("v=3&_xsrf=%s&podid=%s&where=%s",
@@ -1481,8 +1481,8 @@ BelugaPodSetLocation(BelugaAccount *account,
 			     pod->id,
 			     encodedLocation);
   g_free(encodedLocation);
-  beluga_post_or_get(account, 
-		     BELUGA_METHOD_POST, 
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_POST, 
 		     host, url, 
 		     postData, NULL, 
 		     NULL, FALSE);
@@ -1491,8 +1491,8 @@ BelugaPodSetLocation(BelugaAccount *account,
 }
 
 void
-BelugaPodSetAddress(BelugaAccount *account,
-		    BelugaPod *pod,
+GroupMePodSetAddress(GroupMeAccount *account,
+		    GroupMePod *pod,
 		    const gchar *address)
 {
   const gchar *host;
@@ -1500,11 +1500,11 @@ BelugaPodSetAddress(BelugaAccount *account,
   gchar *url;
   gchar *encodedAddress;
   
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"PodSetAddress(%s, %s)\n",
 		pod->id, address);
   
-  host = BelugaAccountHost(account);
+  host = GroupMeAccountHost(account);
   url = g_strdup_printf("/api/pods/modifyPod");
   encodedAddress = g_strdup(purple_url_encode(address));
   postData = g_strdup_printf("v=3&_xsrf=%s&podid=%s&addr=%s",
@@ -1512,8 +1512,8 @@ BelugaPodSetAddress(BelugaAccount *account,
 			     pod->id,
 			     encodedAddress);
   g_free(encodedAddress);
-  beluga_post_or_get(account, 
-		     BELUGA_METHOD_POST, 
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_POST, 
 		     host, url, 
 		     postData, NULL, 
 		     NULL, FALSE);
@@ -1522,27 +1522,27 @@ BelugaPodSetAddress(BelugaAccount *account,
 }
 
 void
-BelugaPodAddMembers(BelugaAccount *account, 
-		    BelugaPod *pod, 
+GroupMePodAddMembers(GroupMeAccount *account, 
+		    GroupMePod *pod, 
 		    gchar *argsString)
 {
   gchar **split;
   int n;
 
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"PodAddMember(%s)\n",
 		pod->id);
 
   split = g_strsplit(argsString, ",", 0);
   for (n=0; split[n]; ++n) {
-    BelugaPodAddMember(account, pod, split[n]);
+    GroupMePodAddMember(account, pod, split[n]);
   }
   g_strfreev(split);
 }
 
 void
-BelugaPodAddMember(BelugaAccount *account, 
-		     BelugaPod *pod, 
+GroupMePodAddMember(GroupMeAccount *account, 
+		     GroupMePod *pod, 
 		     gchar *member)
 {
   const gchar *host;
@@ -1550,11 +1550,11 @@ BelugaPodAddMember(BelugaAccount *account,
   gchar *url;
   gchar *invites;
   
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"PodInviteEmail(%s, %s)\n",
 		pod->id, member);
   
-  host = BelugaAccountHost(account);
+  host = GroupMeAccountHost(account);
   url = g_strdup_printf("/api/pods/modifyPod");
   // POST data:
   // invites=[{"picked":["email"],"idents":["email"]}]
@@ -1567,8 +1567,8 @@ BelugaPodAddMember(BelugaAccount *account,
   			     pod->id,
   			     purple_url_encode(invites));
   g_free(invites);
-  beluga_post_or_get(account, 
-		     BELUGA_METHOD_POST, 
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_POST, 
 		     host, url, 
 		     postData, NULL, 
 		     NULL, FALSE);
@@ -1577,27 +1577,27 @@ BelugaPodAddMember(BelugaAccount *account,
 }
 
 void
-BelugaPodRemoveMembers(BelugaAccount *account,
-		    BelugaPod *pod, 
+GroupMePodRemoveMembers(GroupMeAccount *account,
+		    GroupMePod *pod, 
 		    gchar *argsString)
 {
   gchar **split;
   int n;
 
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"PodRemoveMember(%s)\n",
 		pod->id);
 
   split = g_strsplit(argsString, ",", 0);
   for (n=0; split[n]; ++n) {
-    BelugaPodRemoveMember(account, pod, split[n]);
+    GroupMePodRemoveMember(account, pod, split[n]);
   }
   g_strfreev(split);
 }
 
 void
-BelugaPodRemoveMember(BelugaAccount *account,
-		      BelugaPod *pod,
+GroupMePodRemoveMember(GroupMeAccount *account,
+		      GroupMePod *pod,
 		      const gchar *uid)
 {
   const gchar *host;
@@ -1605,11 +1605,11 @@ BelugaPodRemoveMember(BelugaAccount *account,
   gchar *url;
   gchar *userList;
   
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"PodRemoveUser(%s, %s)\n",
 		pod->id, uid);
   
-  host = BelugaAccountHost(account);
+  host = GroupMeAccountHost(account);
   url = g_strdup_printf("/api/pods/modifyPod");
   // POST data:
   // rmusers=["4d6d4f5c78f2f240e0002086"]&podid=4de21d23e694aa6c05004dfd&v=3
@@ -1619,8 +1619,8 @@ BelugaPodRemoveMember(BelugaAccount *account,
   			     pod->id,
   			     purple_url_encode(userList));
   g_free(userList);
-  beluga_post_or_get(account, 
-		     BELUGA_METHOD_POST, 
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_POST, 
 		     host, url, 
 		     postData, NULL, 
 		     NULL, FALSE);
@@ -1629,22 +1629,22 @@ BelugaPodRemoveMember(BelugaAccount *account,
 }
 
 void
-BelugaPodLeave(BelugaAccount *account,
-	       BelugaPod *pod)
+GroupMePodLeave(GroupMeAccount *account,
+	       GroupMePod *pod)
 {
-  BelugaLogInfo("beluga", 
+  GroupMeLogInfo("groupme", 
 		"PodLeave(%s)\n",
 		pod->id);
-  BelugaPodRemoveMember(account, pod, account->uid);
+  GroupMePodRemoveMember(account, pod, account->uid);
 }
 
 void
-BelugaSendMessage(BelugaAccount *account,
+GroupMeSendMessage(GroupMeAccount *account,
 		  const char *podId,
 		  const char *msg)
 {
-  BelugaPod *pod;
-  pod = BelugaAccountGetPod(account, podId);
+  GroupMePod *pod;
+  pod = GroupMeAccountGetPod(account, podId);
 
   // add this message to the pod's outbox
   pod->toSend = g_slist_append(pod->toSend, 
@@ -1653,13 +1653,13 @@ BelugaSendMessage(BelugaAccount *account,
   // if the new message is the only one in 
   // the queue, call SendNextMessage
   if (g_slist_length(pod->toSend) == 1) {
-    BelugaSendNextMessage(account, pod);
+    GroupMeSendNextMessage(account, pod);
   }
 }
 
 void
-BelugaSendNextMessage(BelugaAccount *account,
-		      BelugaPod *pod)
+GroupMeSendNextMessage(GroupMeAccount *account,
+		      GroupMePod *pod)
 {
   const gchar *host;
   gchar *msg;
@@ -1673,7 +1673,7 @@ BelugaSendNextMessage(BelugaAccount *account,
 
   // get msg from head of outbox
   msg = (gchar *)pod->toSend->data;
-  BelugaLogMisc("beluga",
+  GroupMeLogMisc("groupme",
 		"SendNextMessage(%s, %s)\n",
 		pod->id, msg);
 
@@ -1689,27 +1689,27 @@ BelugaSendNextMessage(BelugaAccount *account,
   g_free(unescapedMsg);
   
   // send request (fire & forget)
-  host = BelugaAccountHost(account);
-  beluga_post_or_get(account, 
-		     BELUGA_METHOD_POST, 
+  host = GroupMeAccountHost(account);
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_POST, 
 		     host, "/api/updates/createUpdate", 
 		     postData,
-		     BelugaSendNextMessageCB, pod,
+		     GroupMeSendNextMessageCB, pod,
 		     TRUE);
   g_free(postData);
 }
 		  
 void 
-BelugaSendNextMessageCB(BelugaAccount *account, 
+GroupMeSendNextMessageCB(GroupMeAccount *account, 
 			gchar const *requestUrl, 
 			gchar *data, gsize dataLen, 
 			gpointer userData)
 {
-  BelugaPod *pod;
+  GroupMePod *pod;
   gchar *msg;
-  pod = (BelugaPod *)userData;
+  pod = (GroupMePod *)userData;
 
-  BelugaLogMisc("beluga",
+  GroupMeLogMisc("groupme",
 		"SendNextMessageCB(%s)\n",
 		pod->id);
 
@@ -1719,5 +1719,5 @@ BelugaSendNextMessageCB(BelugaAccount *account,
   g_free(msg);
 
   // try to send another message
-  BelugaSendNextMessage(account, pod);
+  GroupMeSendNextMessage(account, pod);
 }
