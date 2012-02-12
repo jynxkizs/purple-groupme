@@ -1,0 +1,39 @@
+{
+  "versions" :
+    [
+      { 
+	"status" : "beta",
+        "major" : 0,
+        "minor" : 1,
+        "revision" : 0,
+        "changes" : 
+          [
+	    "Login"
+	  ],
+	"svn-revision" : 1
+      },
+      { 
+	"status" : "to do",
+        "major" : 0,
+        "minor" : 0,
+        "revision" : 0,
+        "changes" : 
+          [
+	    "Configuring Accounts",
+	    "Login",
+	    "Send/Receive Messages",
+	    "Receive Photos",
+	    "WebLinks",
+	    "Geo-data",
+	    "Chat Avatar",
+	    "Create Chat",
+	    "Invite to Chat",
+	    "Leave Chat",
+	    "Set Chat Name",
+	    "",
+	    ""
+	  ],
+	"svn-revision" : 0
+      }
+    ]
+}
