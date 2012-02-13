@@ -36,7 +36,19 @@ const gchar *
 groupme_html_dup_error(const gchar *html, gchar **error);
 
 const gchar *
-groupme_html_dup_uid(const gchar *html, gchar **uid);
+groupme_html_dup_srf_param(const gchar *html, gchar **srf_param);
+
+const gchar *
+groupme_html_dup_srf_token(const gchar *html, gchar **srf_token);
+
+const gchar *
+groupme_html_dup_utf8(const gchar *html, gchar **utf8);
+
+const gchar *
+groupme_html_dup_auth_token(const gchar *html, gchar **auth_token);
+
+const gchar *
+groupme_html_dup_chats_json(const gchar *html, gchar **chats_json);
 
 const gchar *
 groupme_html_dup_pod_id(const gchar *html, gchar **pod_id);

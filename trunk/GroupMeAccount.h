@@ -32,7 +32,8 @@ struct _GroupMeAccount {
   GSList *dns_queries;
   GHashTable *hostname_ip_cache;
   GHashTable *cookie_table;
-  gchar *_xsrf;
+  gchar *token;
+  gchar *v2Host;
 
   // internals
   gchar *groupme_app;
@@ -40,8 +41,8 @@ struct _GroupMeAccount {
   guint seedTimeout;
 
   // account data
-  gchar *name;
   gchar *uid;
+  gchar *name;
   gchar *error;
   GHashTable *pods;
   gchar *podImagesPath;
@@ -80,6 +81,9 @@ GroupMeAccountGenerateStoragePath(GroupMeAccount *account);
 
 const gchar *
 GroupMeAccountHost(GroupMeAccount *account);
+
+const gchar *
+GroupMeAccountV2Host(GroupMeAccount *account);
 
 int
 GroupMeAccountSeedFetchCount(GroupMeAccount *account);

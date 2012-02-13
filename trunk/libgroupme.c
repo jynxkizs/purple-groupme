@@ -570,7 +570,7 @@ groupme_get_account_text_table(PurpleAccount *account)
   purple_debug_info("groupme", "account_text_table\n");
   table = g_hash_table_new(g_str_hash, g_str_equal);
   
-  g_hash_table_insert(table, "login_label", (gpointer)_("Email Address..."));
+  g_hash_table_insert(table, "login_label", (gpointer)_("Phone # or Email Address..."));
   
   return table;
 }
@@ -703,7 +703,7 @@ static void plugin_init(PurplePlugin *plugin)
   
   purple_debug_info("groupme", "init\n");
 
-  option = purple_account_option_string_new("Host", "host", "groupmepods.com");
+  option = purple_account_option_string_new("Host", "host", "groupme.com");
   prpl_info->protocol_options = g_list_append(prpl_info->protocol_options, option);
   
   option = purple_account_option_int_new("Initial Messages fetched", "seedFetchCount", 30);

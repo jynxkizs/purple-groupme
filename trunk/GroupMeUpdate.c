@@ -183,20 +183,19 @@ GroupMeUpdate *
 GroupMeUpdateFromJson(const gchar *json)
 {
   GroupMeUpdate *newUpdate;
-  gint index;
   const gchar *name;
-  const gchar *text;
-  const gchar *uid;
+  gint64 ctTime;
   time_t timestamp;
+  const gchar *location;
   gdouble lat;
   gdouble lon;
   gboolean hasPhoto;
+  const gchar *photoUrl;
   gboolean isAdmin;
-  gint64 ctTime;
+  const gchar *text;
+  const gchar *uid;
+  gint index;
   
-  // get index
-  index = json_object_pair_value_int(json, "i");
-
   // get name
   name = json_object_pair_value(json, "name");
   if (!name) {
@@ -204,6 +203,35 @@ GroupMeUpdateFromJson(const gchar *json)
     return NULL;
   }
   
+  // get ct (time)
+  ctTime = json_object_pair_value_int(json, "created_at");
+  timestamp = ctTime;// / 1000000;
+  if (!timestamp) {
+    GroupMeLogWarn("groupme", "update: no ct time\n");
+    return NULL;
+  }
+
+  // get msg location (optional)
+  location = json_object_pair_value(json, "location");
+  lat = 0.0f;
+  lon = 0.0f;
+  if (location) {
+    if (!json_object_pair_value_named_const_equals(json, "lat", "null")) {
+      lat = json_object_pair_value_float(json, "lat");
+    }
+    if (!json_object_pair_value_named_const_equals(json, "lng", "null")) {
+      lon = json_object_pair_value_float(json, "lng");
+    }
+  }
+  
+  // get has image
+  hasPhoto = !json_object_pair_value_named_const_equals(json, "picture_url", "null");
+  if (hasPhoto) {
+    photoUrl = json_object_pair_value(json, "picture_url");
+  } else {
+    photoUrl = NULL;
+  }
+
   // get text
   text = json_object_pair_value(json, "text");
   if (!text) {
@@ -211,30 +239,18 @@ GroupMeUpdateFromJson(const gchar *json)
     return NULL;
   }
 
-  // get ct (time)
-  ctTime = json_object_pair_value_int(json, "ct");
-  timestamp = ctTime / 1000000;
-  if (!timestamp) {
-    GroupMeLogWarn("groupme", "update: no ct time\n");
-    return NULL;
-  }
+  // get is admin
+  isAdmin = json_object_pair_value_named_const_equals(json, "system", "true");
+
+  // get message id
+  index = json_object_pair_value_int(json, "id");
 
   // get uid
-  uid = json_object_pair_value(json, "uid");
+  uid = json_object_pair_value(json, "user_id");
   if (!uid) {
     GroupMeLogWarn("groupme", "update: no uid\n");
     return NULL;
   }
-
-  // get msg location (optional)
-  lat = json_object_pair_value_float(json, "lat");
-  lon = json_object_pair_value_float(json, "lon");
-  
-  // get has image
-  hasPhoto = json_object_pair_value_named_const_equals(json, "img", "true");
-
-  // get is admin
-  isAdmin = json_object_pair_value_named_const_equals(json, "admin", "true");
 
   // success, return a new update
   newUpdate = GroupMeUpdateNew();
@@ -246,7 +262,7 @@ GroupMeUpdateFromJson(const gchar *json)
   newUpdate->lat = lat;
   newUpdate->lon = lon;
   newUpdate->hasPhoto = hasPhoto;
-  newUpdate->photoUrl = NULL;
+  newUpdate->photoUrl = json_string_dup(photoUrl);
   newUpdate->isAdmin = isAdmin;
   return newUpdate;
 }

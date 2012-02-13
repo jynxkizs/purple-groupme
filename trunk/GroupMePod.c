@@ -31,30 +31,30 @@ GroupMePodNew()
 {
   GroupMePod *newPod;
   newPod = g_new0(GroupMePod, 1);
-  newPod->updates = g_hash_table_new_full(g_direct_hash,
-					  g_direct_equal,
-					  NULL,
-					  (GDestroyNotify)GroupMeUpdateFree);
   return newPod;
 }
 
 void
 GroupMePodFree(GroupMePod *pod)
 {
+  GroupMeUpdate *update;
   gchar *msg;
 
   g_free(pod->id);
   g_free(pod->title);
-  g_free(pod->ihash);
   g_free(pod->imageUrl);
   //g_free(pod->location);
   //g_hash_table_destroy(pod->members);
-  g_hash_table_destroy(pod->updates);
   while (pod->toSend) {
     msg = (gchar *)pod->toSend->data;
     pod->toSend = g_slist_remove(pod->toSend, (gpointer)msg);
     g_free(msg);
   }
+  while (pod->updates) {
+    update = (GroupMeUpdate *)pod->updates->data;
+    pod->updates = g_list_remove(pod->updates, (gpointer)update);
+    GroupMeUpdateFree(update);
+  }    
   if (pod->retryPollPodTimeout) {
     purple_timeout_remove(pod->retryPollPodTimeout);
   }
@@ -74,15 +74,11 @@ GroupMePodFromHtml(const gchar *html, const gchar **htmlEnd)
   // find the next pod and get its id
   html = groupme_html_dup_pod_id(html, &newPod->id);
   
-  // get the pod img url (for buddy icon)
-  newPod->ihash = g_strdup("");
+  // get the pod imageurl (for buddy icon)
   html = groupme_html_dup_pod_imgurl(html, &newPod->imageUrl);
   
   // get the pod title (for 'alias')
   html = groupme_html_dup_pod_title(html, &newPod->title);
-
-  // get the pod time (for status)
-  //
 
   if (!newPod->id ||
       !newPod->title) {
@@ -98,23 +94,20 @@ GroupMePod *
 GroupMePodFromJson(const gchar *json, const gchar **jsonEnd)
 {
   GroupMePod *newPod;
+  const gchar *meta;
   gchar *tmp;
 
   // create a new pod
   newPod = GroupMePodNew();
 
-  // find the next pod and get its id
-  newPod->id = json_object_pair_value_string_dup(json, "_id");
-  
-  // get the pod img url (for buddy icon)
-  tmp = json_object_pair_value_string_dup(json, "ihash");
-  if (newPod->id && tmp[0]) {
-    GroupMePodSetIHash(newPod, tmp);
-  }
-  g_free(tmp);
+  // find the pod's metadata
+  meta = json_object_pair_value(json, "meta");
 
+  // get the pod's id
+  newPod->id = json_object_pair_value_string_dup(meta, "group_id");
+  
   // get the pod title (for 'alias')
-  tmp = json_object_pair_value_string_dup(json, "what");
+  tmp = json_object_pair_value_string_dup(json, "label");
   GroupMePodSetTitle(newPod, tmp);
   g_free(tmp);
 
@@ -126,6 +119,11 @@ GroupMePodFromJson(const gchar *json, const gchar **jsonEnd)
     GroupMePodFree(newPod);
     return NULL;
   }
+
+  // get the pod img url (for buddy icon)
+  tmp = json_object_pair_value_string_dup(json, "avatar_url");
+  GroupMePodSetImageUrl(newPod, tmp);
+  g_free(tmp);
 
   if (jsonEnd) {
     *jsonEnd = json_object_end(json);
@@ -148,48 +146,59 @@ GroupMePodSetTitle(GroupMePod *pod,
 }
 
 void
-GroupMePodSetIHash(GroupMePod *pod,
-		  gchar *newIHash)
+GroupMePodSetImageUrl(GroupMePod *pod,
+		       gchar *newImageUrl)
 {
-  if (pod->ihash) {
-    g_free(pod->ihash);
-  }
-  pod->ihash = g_strdup(newIHash);
-
   if (pod->imageUrl) {
     g_free(pod->imageUrl);
     pod->imageUrl = NULL;
   }
-  if (pod->ihash[0]) {
-    pod->imageUrl = g_strdup_printf("/podimg/100/%s/%s",
-				    pod->id,
-				    pod->ihash);
-  }
-}
-
-gboolean
-GroupMePodHasUpdate(GroupMePod *pod, 
-		   gint index)
-{
-  return (gboolean)g_hash_table_lookup(pod->updates, 
-				       GINT_TO_POINTER(index));
-}
-
-GroupMeUpdate *
-GroupMePodGetUpdate(GroupMePod *pod, 
-		   gint index)
-{
-  return g_hash_table_lookup(pod->updates, 
-			     GINT_TO_POINTER(index));
+  pod->imageUrl = g_strdup(newImageUrl);
 }
 
 void
-GroupMePodAddUpdate(GroupMePod *pod, 
-		   GroupMeUpdate *update)
+GroupMePodPrependUpdate(GroupMePod *pod, 
+		       GroupMeUpdate *update)
 {
-  g_hash_table_insert(pod->updates, 
-		      GINT_TO_POINTER(update->index), 
-      		      update);
+  pod->updates = g_list_prepend(pod->updates, 
+				(gpointer)update);
+  if (pod->nextUpdateDisplayed == NULL) {
+    pod->nextUpdateDisplayed = g_list_last(pod->updates);
+    pod->lastUpdateTime = update->timestamp;
+  }
+}
+
+void
+GroupMePodAppendUpdate(GroupMePod *pod, 
+		       GroupMeUpdate *update)
+{
+  pod->updates = g_list_append(pod->updates, 
+			       (gpointer)update);
+  pod->lastUpdateTime = update->timestamp;
+  if (pod->nextUpdateDisplayed == NULL) {
+    pod->nextUpdateDisplayed = g_list_last(pod->updates);
+  }
+}
+
+GroupMeUpdate *
+GroupMePodNextUpdate(GroupMePod *pod)
+{
+  GroupMeUpdate *nextUpdate;
+
+  if (!pod->nextUpdateDisplayed) {
+    return NULL;
+  }
+
+  nextUpdate = pod->nextUpdateDisplayed->data;
+  pod->nextUpdateDisplayed = g_list_next(pod->nextUpdateDisplayed);
+
+  return nextUpdate;
+}
+
+void
+GroupMePodResetUpdateIterator(GroupMePod *pod)
+{
+  pod->nextUpdateDisplayed = g_list_first(pod->updates);
 }
 
 void 
