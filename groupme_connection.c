@@ -198,8 +198,16 @@ static void groupme_connection_process_data(GroupMeConnection *conn)
       }
   }
 
+  if (conn->rx_buf) {
+    //purple_debug_misc("groupme", "HEADERS:\n%s", conn->rx_buf);
+  }
+
   g_free(conn->rx_buf);
   conn->rx_buf = NULL;
+
+  if (tmp) {
+    //purple_debug_misc("groupme", "DATA:\n%s", tmp);
+  }
 
   if (conn->callback != NULL)
     conn->callback(conn->na, conn->url, tmp, len, conn->user_data);

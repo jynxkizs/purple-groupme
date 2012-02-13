@@ -28,17 +28,16 @@ struct _GroupMePod {
 
   gchar *id;
   gchar *title;
-  gchar *ihash;
   gchar *imageUrl;
 
   // gint64 time;
   // gchar *location;
   //GHashTable *members;
-  GHashTable *updates;
-  GSList *toSend;
 
-  gint   lastUpdateReceived;
-  gint   nextUpdateDisplayed;
+  GSList *toSend;
+  GList  *updates;
+  GList  *nextUpdateDisplayed;
+  gint   lastUpdateTime;
 
   guint retryPollPodTimeout;
   guint catchupPodTimeout;
@@ -65,20 +64,26 @@ GroupMePodSetTitle(GroupMePod *pod,
 		  gchar *newTitle);
 
 void
-GroupMePodSetIHash(GroupMePod *pod,
-		  gchar *newIHash);
-
-gboolean
-GroupMePodHasUpdate(GroupMePod *pod, 
-		   gint index);
+GroupMePodSetImageUrl(GroupMePod *pod,
+		      gchar *newImageUrl);
 
 GroupMeUpdate *
 GroupMePodGetUpdate(GroupMePod *pod, 
 		   gint index);
 
 void
-GroupMePodAddUpdate(GroupMePod *pod, 
-		   GroupMeUpdate *update);
+GroupMePodPrependUpdate(GroupMePod *pod, 
+			GroupMeUpdate *update);
+
+void
+GroupMePodAppendUpdate(GroupMePod *pod, 
+		       GroupMeUpdate *update);
+
+GroupMeUpdate *
+GroupMePodNextUpdate(GroupMePod *pod);
+
+void
+GroupMePodResetUpdateIterator(GroupMePod *pod);
 
 void 
 GroupMePodImageFromPngData(GroupMeAccount *account,

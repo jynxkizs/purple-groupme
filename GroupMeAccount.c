@@ -45,8 +45,9 @@ GroupMeAccountFree(GroupMeAccount *account)
   g_hash_table_destroy(account->pods);
   g_free(account->podImagesPath);
   g_free(account->storagePath);
-  g_free(account->name);
+  g_free(account->v2Host);
   g_free(account->uid);
+  g_free(account->name);
   g_free(account->error);
   g_free(account);
 }
@@ -56,8 +57,8 @@ GroupMeAccountFromHtml(GroupMeAccount *account,
 		      const gchar *html)
 {
   GroupMeLogMisc("groupme", "AccountFromHtml\n");
-  groupme_html_dup_uid(html, &account->uid);
-  groupme_html_dup_error(html, &account->error);
+  //groupme_html_dup_uid(html, &account->uid);
+  //groupme_html_dup_error(html, &account->error);
 }
 
 gboolean
@@ -120,6 +121,16 @@ GroupMeAccountHost(GroupMeAccount *account)
   return purple_account_get_string(account->account,
 				   "host",
 				   "groupme.com");
+}
+
+const gchar *
+GroupMeAccountV2Host(GroupMeAccount *account)
+{
+  if (!account->v2Host) {
+    account->v2Host = g_strdup_printf("v2.%s", 
+  		        GroupMeAccountHost(account));
+  }
+  return account->v2Host;
 }
 
 int

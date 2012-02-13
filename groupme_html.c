@@ -32,27 +32,59 @@
 #include "util.h"
 #include "groupme_html.h"
 
-// PODS PAGE
+// SIGNIN PAGE
 /*
-  if login error:
-<tr><td class="c1 error" colspan="2"> 
-Unable to sign in with that email/phone and password.
-</td></tr> 
+<!DOCTYPE html>
+<html>
+<head>
+<meta content="IE=Edge" http-equiv="X-UA-Compatible">
+<title>
+GroupMe | Log In
+</title>
+<meta name="csrf-param" content="authenticity_token">
+<meta name="csrf-token" content="33agPkul2A2sieklIjWy1/NIFAFGomkFST/ve27jV74=">
+...
+<input name="utf8" type="hidden" value="&#10003;">
+<input name="authenticity_token" type="hidden" value="6SHVIJ7Elk36BJj+24MXxiuTxIMGJsKb9tP1qcNcGa8=">
+...
+ */
+// marker definitions
+const gchar *srf_param_markers[] = {
+  "name=\"csrf-param\"", "content=\"", NULL, "\""
+};
 
-  else:
-  <div class="pod" id="4db7a12178f2f2377a0b2ad1"> 
-  <div class ="podimg"> 
-  <a class="nojs" href="/pod/4db7a12178f2f2377a0b2ad1"> 
-  <img class='pod-list-tile ' src="/static/img/tiles/p80-1.png?v=8022b"> 
-  </a> 
-  </div> 
-  <div class="podcontent"> 
-  <div class="podtime">2 hr 21 min</div> 
-  <a href="/pod/4db7a12178f2f2377a0b2ad1"> 
-  <a class="podtitle nojs" href="/pod/4db7a12178f2f2377a0b2ad1">Pidgin Squawk</a><br> 
-  <em>Gary: so I'm once again teetering on the edge of learning Qt and pyQt</em><br> 
-  </div> 
-  </div> 
+const gchar *srf_token_markers[] = {
+  "name=\"csrf-token\"", "content=\"", NULL, "\""
+};
+
+// marker definitions
+const gchar *utf8_markers[] = {
+  "name=\"utf8\"", "value=\"", NULL, "\""
+};
+
+const gchar *auth_token_markers[] = {
+  "name=\"authenticity_token\"", "value=\"", NULL, "\""
+};
+
+// GROUPS PAGE
+/*
+...
+<ul class='groups'>
+<li class='loading'>
+Loading your chats
+<img alt="Spinner" src="/images/spinner.gif?1328805355" />
+<script>
+if (typeof window.inbox === 'undefined') window.inbox = new Inbox;
+inbox.items.reset([{"avatar_url":"http:\/\/i.groupme.com\/4589bfd03506012f8aba12313920995b","label":"Happy Panda","time":1329083801,"meta":{"creator":"Kandarp Patel","creator_id":"238592","group_id":"1804895","membership_id":"4307862","phone_number":"+1 8028270842","membership_state":"active","message_id":"274469703"},"type":"group","description":"Darren: like blend of pvz and army of darkness"},{"avatar_url":"http:\/\/i.groupme.com\/8407e6c034ee012f4f4012313d140eb2","label":"Lunch @ Bea Bea's","time":1329022300,"meta":{"creator":"Gyedo Jeon","creator_id":"238483","group_id":"70443","membership_id":"329644","phone_number":"+1 8182731852","membership_state":"active","message_id":"273690711"},"type":"group","description":"Gyedo Jeon: I think she was not sure, either. :)"}])
+</script>
+</li>
+</ul>
+...
+<p>Send a message to one of your GroupMe contacts. It's free and totally private.</p>
+<a href='#' id='create_direct_message'>Send a Direct Message</a>
+<script>
+$$relationships = [{"avatar_url":"http:\/\/i.groupme.com\/a7d42a303685012fa81112313b03216d.avatar","direct_message_capable":true,"phone_number":"+1 8189133741","user_id":"238483","value":"Gyedo Jeon"},{"avatar_url":"http:\/\/i.groupme.com\/6c14b6c03506012f4f4012313d140eb2.avatar","direct_message_capable":true,"phone_number":"+1 8186364751","user_id":"238552","value":"Darren Ranalli"},{"avatar_url":"http:\/\/i.groupme.com\/144a7a503504012f4f4012313d140eb2.avatar","direct_message_capable":true,"phone_number":"+1 9546631193","user_id":"4018442","value":"Juan Carlos Serrallonga"},{"avatar_url":"\/images\/application\/groups\/avatar1.jpg","direct_message_capable":false,"phone_number":"+1 8189156650","user_id":"238568","value":"Dickinson Lo"},{"avatar_url":"\/images\/application\/groups\/avatar4.jpg","direct_message_capable":false,"phone_number":"+1 4124780083","user_id":"238579","value":"Samik Bhowal"}]
+</script>
 */
 // marker definitions
 const gchar *error_markers[] = {
@@ -63,16 +95,27 @@ const gchar *uid_markers[] = {
   "class=\"userimg_small\"", "src=", "/", "/", "/", NULL, "/"
 };
 
+const gchar *chats_json_markers[] = {
+  "class=\'groups\'", "inbox.items.reset(", NULL, "</script>"
+};
+
+/* GROUPS PAGE (alternate)
+<li>
+<a href="/groups/70443" title="view group"><img alt="8407e6c034ee012f4f4012313d140eb2" class="avatar" src="http://i.groupme.com/8407e6c034ee012f4f4012313d140eb2.avatar" />
+<div class='text short'>
+<h2>
+<strong>Lunch @ Bea Bea's</strong>
+*/
 const gchar *pod_id_markers[] = {
-  "class=\"pod\"", "id=\"", NULL, "\""
+  "<li>", "href=\"/groups/", NULL, "\""
 };
 
 const gchar *pod_imgurl_markers[] = {
-  "\"podimg\"", "pod-list-tile", "src=\"", NULL, "\""
+  "<img", "src=\"", NULL, "\""
 };
 
 const gchar *pod_title_markers[] = {
-  "class=\"podtitle nojs\"", ">", NULL, "<"
+  "<strong>", NULL, "</strong>"
 };
 
 //TODO:
@@ -258,6 +301,72 @@ groupme_html_dup_error(const gchar *html, gchar **morsel)
   token_end = html_dup_morsel(html, error_markers, morsel);
   if (*morsel) {
     purple_debug_info("groupme", "\terror:%s\n", *morsel);
+  }
+
+  return token_end;
+}
+
+const gchar *
+groupme_html_dup_srf_param(const gchar *html, gchar **morsel)
+{
+  const gchar *token_end;
+
+  token_end = html_dup_morsel(html, srf_param_markers, morsel);
+  if (*morsel) {
+    purple_debug_info("groupme", "\tsrf_param:%s\n", *morsel);
+  }
+
+  return token_end;
+}
+
+const gchar *
+groupme_html_dup_srf_token(const gchar *html, gchar **morsel)
+{
+  const gchar *token_end;
+
+  token_end = html_dup_morsel(html, srf_token_markers, morsel);
+  if (*morsel) {
+    purple_debug_info("groupme", "\tsrf_token:%s\n", *morsel);
+  }
+
+  return token_end;
+}
+
+const gchar *
+groupme_html_dup_utf8(const gchar *html, gchar **morsel)
+{
+  const gchar *token_end;
+
+  token_end = html_dup_morsel(html, utf8_markers, morsel);
+  if (*morsel) {
+    purple_debug_info("groupme", "\tutf8:%s\n", *morsel);
+  }
+
+  return token_end;
+}
+
+const gchar *
+groupme_html_dup_auth_token(const gchar *html, gchar **morsel)
+{
+  const gchar *token_end;
+
+  token_end = html_dup_morsel(html, auth_token_markers, morsel);
+  if (*morsel) {
+    purple_debug_info("groupme", "\tauthenticity_token:%s\n", *morsel);
+  }
+
+  return token_end;
+}
+
+
+const gchar *
+groupme_html_dup_chats_json(const gchar *html, gchar **morsel)
+{
+  const gchar *token_end;
+
+  token_end = html_dup_morsel(html, chats_json_markers, morsel);
+  if (*morsel) {
+    purple_debug_info("groupme", "\tchats_json:%s\n", *morsel);
   }
 
   return token_end;

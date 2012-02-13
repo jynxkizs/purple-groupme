@@ -4,11 +4,13 @@
       { 
 	"status" : "beta",
         "major" : 0,
-        "minor" : 1,
+        "minor" : 3,
         "revision" : 0,
         "changes" : 
           [
-	    "Login"
+	    "Configuring Accounts",
+	    "Login",
+	    "Receive Messages"
 	  ],
 	"svn-revision" : 1
       },
@@ -19,13 +21,11 @@
         "revision" : 0,
         "changes" : 
           [
-	    "Configuring Accounts",
-	    "Login",
-	    "Send/Receive Messages",
+	    "Send Messages",
 	    "Receive Photos",
 	    "WebLinks",
 	    "Geo-data",
-	    "Chat Avatar",
+	    "Pod Avatar",
 	    "Create Chat",
 	    "Invite to Chat",
 	    "Leave Chat",
