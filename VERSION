@@ -4,6 +4,20 @@
       { 
 	"status" : "beta",
         "major" : 0,
+        "minor" : 7,
+        "revision" : 0,
+        "changes" : 
+          [
+	    "Send Messages",
+	    "Receive/display web links",
+	    "Receive/display location-data (x)",
+	    "Chat Avatar (+set as buddy icon)"
+	  ],
+	"svn-revision" : 2
+      },
+      { 
+	"status" : "beta",
+        "major" : 0,
         "minor" : 3,
         "revision" : 0,
         "changes" : 
@@ -21,11 +35,7 @@
         "revision" : 0,
         "changes" : 
           [
-	    "Send Messages",
 	    "Receive Photos",
-	    "WebLinks",
-	    "Geo-data",
-	    "Pod Avatar",
 	    "Create Chat",
 	    "Invite to Chat",
 	    "Leave Chat",
