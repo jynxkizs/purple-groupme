@@ -37,8 +37,9 @@ struct _GroupMePod {
   GSList *toSend;
   GList  *updates;
   GList  *nextUpdateDisplayed;
-  gint   lastUpdateTime;
+  gint   lastUpdateId;
 
+  guint retryPollPodPeriod;
   guint retryPollPodTimeout;
   guint catchupPodTimeout;
   gchar *photosPath;

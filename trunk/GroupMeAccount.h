@@ -33,6 +33,8 @@ struct _GroupMeAccount {
   GHashTable *hostname_ip_cache;
   GHashTable *cookie_table;
   gchar *token;
+  gchar *utf8; /* stored encoded */
+  gchar *authenticity_token; /* stored encoded */
   gchar *v2Host;
 
   // internals
