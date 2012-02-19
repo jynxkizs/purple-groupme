@@ -163,8 +163,8 @@ GroupMePodPrependUpdate(GroupMePod *pod,
   pod->updates = g_list_prepend(pod->updates, 
 				(gpointer)update);
   if (pod->nextUpdateDisplayed == NULL) {
-    pod->nextUpdateDisplayed = g_list_last(pod->updates);
-    pod->lastUpdateTime = update->timestamp;
+    pod->nextUpdateDisplayed = g_list_first(pod->updates);
+    pod->lastUpdateId = update->index;
   }
 }
 
@@ -174,7 +174,7 @@ GroupMePodAppendUpdate(GroupMePod *pod,
 {
   pod->updates = g_list_append(pod->updates, 
 			       (gpointer)update);
-  pod->lastUpdateTime = update->timestamp;
+  pod->lastUpdateId = update->index;
   if (pod->nextUpdateDisplayed == NULL) {
     pod->nextUpdateDisplayed = g_list_last(pod->updates);
   }
@@ -213,7 +213,7 @@ GroupMePodImageFromPngData(GroupMeAccount *account,
 		pod->id);
 
   // save to disk
-  fileName = g_strdup_printf("%s/%s.png",
+  fileName = g_strdup_printf("%s/%s.jpeg",
 			     account->podImagesPath,
 			     pod->id);
   purple_util_write_data_to_file_absolute(fileName, 

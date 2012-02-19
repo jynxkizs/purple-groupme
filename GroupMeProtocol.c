@@ -334,8 +334,8 @@ GroupMeDisplayNewUpdates(GroupMeAccount *account,
     msgFlags = PURPLE_MESSAGE_RECV;
     msgFlags |= isFromLocalUser?PURPLE_MESSAGE_NICK:0;
     msgFlags |= update->isDelayed?PURPLE_MESSAGE_DELAYED:0;
-    GroupMeLogMisc("groupme", "msg: %s (%s):\n\t%s\n",
-		  update->name, update->uid, update->text);
+    GroupMeLogMisc("groupme", "msg:\n\t(%ld) %s (%s):%s\n",
+		   update->timestamp, update->name, update->uid, update->text);
 
     purple_conv_im_write(conv->u.im, 
 			 update->name, 
@@ -583,6 +583,8 @@ GroupMeDisconnect(GroupMeAccount *account)
   g_hash_table_destroy(account->cookie_table);
   g_hash_table_destroy(account->hostname_ip_cache);
   g_free(account->token);
+  g_free(account->utf8);
+  g_free(account->authenticity_token);
 
   // free the account
   GroupMeAccountFree(account);
@@ -608,7 +610,7 @@ GroupMeContactHost(GroupMeAccount *account)
   host = GroupMeAccountHost(account);
   groupme_post_or_get(account, 
 		     GROUPME_METHOD_GET, 
-		      host, "/?full_site=1", 
+		      host, "/", 
 		     NULL, GroupMeContactHostCB, 
 		     NULL, TRUE);  
 }
@@ -627,7 +629,7 @@ GroupMeContactHostCB(GroupMeAccount *account,
   host = GroupMeAccountHost(account);
   groupme_post_or_get(account, 
 		      GROUPME_METHOD_GET,
-		      host, "/signin?full_site=1", 
+		      host, "/signin", 
 		      NULL, GroupMeSignInPage0CB, 
 		      NULL, TRUE);  
 }
@@ -647,7 +649,7 @@ GroupMeSignInPage0CB(GroupMeAccount *account,
   groupme_post_or_get(account, 
 		      GROUPME_METHOD_GET | 
 		      GROUPME_METHOD_SSL, 
-		      host, "/signin?full_site=1", 
+		      host, "/signin", 
 		      NULL, GroupMeSignInPageCB, 
 		      NULL, TRUE);  
 }
@@ -662,8 +664,6 @@ GroupMeSignInPageCB(GroupMeAccount *account,
   gchar *postData;
   gchar *utf8;
   gchar *authToken;
-  gchar *encodedUtf8;
-  gchar *encodedAuthToken;
   gchar *encodedUser;
   gchar *encodedPass;
   
@@ -676,7 +676,7 @@ GroupMeSignInPageCB(GroupMeAccount *account,
 			      _("utf8 not found"));
       return;
   }
-  encodedUtf8 = g_strdup(purple_url_encode(utf8));
+  account->utf8 = g_strdup(purple_url_encode(utf8));
   g_free(utf8);
 
   groupme_html_dup_auth_token(html, &authToken);
@@ -686,7 +686,7 @@ GroupMeSignInPageCB(GroupMeAccount *account,
 			      _("authenticity_token not found"));
       return;
   }
-  encodedAuthToken = g_strdup(purple_url_encode(authToken));
+  account->authenticity_token = g_strdup(purple_url_encode(authToken));
   g_free(authToken);
 
   // we're connected to the host website now
@@ -697,18 +697,15 @@ GroupMeSignInPageCB(GroupMeAccount *account,
   // form post data
   encodedUser = g_strdup(purple_url_encode(purple_account_get_username(account->account)));
   encodedPass = g_strdup(purple_url_encode(purple_account_get_password(account->account)));
-  postData = g_strdup_printf("full_site=1"
-			     "&utf8=%%E2%%9C%%93"
+  postData = g_strdup_printf("utf8=%%E2%%9C%%93"
 			     "&authenticity_token=%s"
 			     "&session%%5Bphone_number%%5D=%s"
 			     "&session%%5Bpassword%%5D=%s"
 			     "&session%%5Bremember_me%%5D=0", 
-			     //encodedUtf8,
-			     encodedAuthToken,
+			     //account->utf8,
+			     account->authenticity_token,
 			     encodedUser, 
 			     encodedPass);
-  g_free(encodedUtf8);
-  g_free(encodedAuthToken);
   g_free(encodedUser);
   g_free(encodedPass);
 
@@ -767,7 +764,7 @@ GroupMeSeedAccount(GroupMeAccount *account)
   groupme_post_or_get(account, 
 		     GROUPME_METHOD_GET | 
 		     GROUPME_METHOD_SSL, 
-		     host, "/groups?full_site=1", 
+		     host, "/groups", 
 		     NULL, GroupMeSeedAccountCB, 
 		     NULL, TRUE);
 }
@@ -1009,10 +1006,10 @@ GroupMeSeedPod(GroupMeAccount *account, GroupMePod *pod)
   newRequest->account = account;
   newRequest->pod = pod;
   host = GroupMeAccountV2Host(account);
-  url = g_strdup_printf("/groups/%s/messages?token=%s&since=%d", 
+  url = g_strdup_printf("/groups/%s/messages?token=%s", 
 			purple_url_encode(pod->id), 
-			account->token,
-			pod->lastUpdateTime);
+			account->token);
+  GroupMeLogInfo("groupme", "%s", url);
   groupme_post_or_get(account, 
 		      GROUPME_METHOD_GET | 
 		      GROUPME_METHOD_SSL, 
@@ -1061,8 +1058,8 @@ GroupMeSeedPodCB(GroupMeAccount *account,
 			   pod,
 			   newUpdate);
     }
-    if (newUpdate->timestamp > pod->lastUpdateTime) {
-      pod->lastUpdateTime = newUpdate->timestamp;
+    if (newUpdate->index > pod->lastUpdateId) {
+      pod->lastUpdateId = newUpdate->index;
     }
     lastIndex = newUpdate->index;
   }
@@ -1082,18 +1079,19 @@ GroupMeSeedPodCB(GroupMeAccount *account,
 
 void
 GroupMeRetryPollNewUpdates(GroupMeAccount *account,
-		       GroupMePod *pod)
+			   GroupMePod *pod)
 {
   RequestData *newRequest;
   newRequest = g_new0(RequestData, 1);
   newRequest->account = account;
   newRequest->pod = pod;
 
-  GroupMeDebugMsg(account, pod, 
-		 "Scheduling retry poll for updates...");
+  GroupMeLogMisc("groupme",
+		 "Scheduling retry poll for updates (%d sec)...\n",
+		 pod->retryPollPodPeriod);
 
   pod->retryPollPodTimeout = 
-    purple_timeout_add_seconds(60,
+    purple_timeout_add_seconds(pod->retryPollPodPeriod,
 			       GroupMeRetryPollNewUpdatesTO,
 			       (gpointer)newRequest);
 }
@@ -1104,12 +1102,12 @@ GroupMeRetryPollNewUpdatesTO(gpointer data)
   RequestData *request;
   request = (RequestData *)data;
 
-  GroupMeDebugMsg(request->account, request->pod, 
-		 "Retrying poll for updates...");
+  GroupMeLogMisc("groupme",
+		 "Retrying poll for updates...\n");
 
   request->pod->retryPollPodTimeout = 0;
   // Pickup lost messages
-  GroupMeSeedPod(request->account, request->pod);
+  //GroupMeSeedPod(request->account, request->pod);
   // Pickup new messages
   GroupMePollNewUpdates(request->account, request->pod);
 
@@ -1133,14 +1131,19 @@ GroupMePollNewUpdates(GroupMeAccount *account,
   newRequest = g_new0(RequestData, 1);
   newRequest->account = account;
   newRequest->pod = pod;
-  host = GroupMeAccountHost(account);
-  url = g_strdup_printf("/api/poll/newUpdates?podid=%s", 
-			  purple_url_encode(pod->id));
+  host = GroupMeAccountV2Host(account);
+  url = g_strdup_printf("/groups/%s/messages?token=%s&since_id=%d", 
+			purple_url_encode(pod->id), 
+			account->token,
+			pod->lastUpdateId);
+  GroupMeLogInfo("groupme", "%s%s", host, url);
   groupme_post_or_get(account, 
-		     GROUPME_METHOD_GET, 
-		     host, url,
-		     NULL, GroupMePollNewUpdatesCB, 
-		     newRequest, TRUE);
+		      GROUPME_METHOD_GET | 
+		      GROUPME_METHOD_SSL, 
+		      host, url,
+		      //NULL, GroupMeSeedPodCB, 
+		      NULL, GroupMePollNewUpdatesCB,
+		      newRequest, TRUE);
   g_free(url);
 }
 
@@ -1158,11 +1161,12 @@ GroupMePollNewUpdatesCB(GroupMeAccount *account,
   const gchar *root;
   const gchar *result;
   const gchar *messages;
-  gboolean initialize;
+  //gboolean initialize;
+  GList  *updates;
 
   request = (RequestData *)userData;
   pod = request->pod;
-  initialize = (pod->updates == NULL);
+  //initialize = (pod->updates == NULL);
 
   g_free(request);
 
@@ -1170,6 +1174,11 @@ GroupMePollNewUpdatesCB(GroupMeAccount *account,
 		"PollNewUpdatesCB(%s)\n",
 		pod->title);
   //GroupMeLogMisc("groupme", "response:\n%s", data);
+
+  // extend retry poll period
+  if (pod->retryPollPodPeriod < 15) {
+    pod->retryPollPodPeriod += 1;
+  }
 
   // look for json result
   if (!data) {
@@ -1180,7 +1189,7 @@ GroupMePollNewUpdatesCB(GroupMeAccount *account,
   
   root = json_object_seek(data);
   if (!root) {
-    GroupMeLogWarn("groupme", "no root json object\n");
+    GroupMeLogMisc("groupme", "no updates (no root json object)\n");
     GroupMeRetryPollNewUpdates(account, pod);
     return;
   }
@@ -1229,30 +1238,33 @@ GroupMePollNewUpdatesCB(GroupMeAccount *account,
   }
 
   // parse all of the updates
+  updates = NULL;
   for (json = json_object_seek(json_array_contents(messages));
        json != NULL;
        json = json_object_seek(json_token_seek(json))) {
     
     newUpdate = GroupMeUpdateFromJson(json);
-    if (initialize) {
-      GroupMePodPrependUpdate(pod, newUpdate);
-    } else {
-      GroupMePodAppendUpdate(pod, newUpdate);
-    }
+    updates = g_list_prepend(updates, 
+			     (gpointer)newUpdate);
     if (newUpdate->hasPhoto) {
       GroupMeUpdatePhoto(account, pod, newUpdate);
     }
   }
 
-  if (initialize) {
-    GroupMePodResetUpdateIterator(pod);
-  }
+  // add updates (now in proper (reversed) order)
+  while (updates) {
+    newUpdate = (GroupMeUpdate *)updates->data;
+    updates = g_list_remove(updates, (gpointer)newUpdate);
+    GroupMePodAppendUpdate(pod, newUpdate);
+  }    
 
   // display any new updates we may have gotten
   GroupMeDisplayNewUpdates(account, pod);
 
   // poll again for new updates
-  GroupMePollNewUpdates(account, pod);
+  pod->retryPollPodPeriod = 0;
+  GroupMeRetryPollNewUpdates(account, pod);
+  //GroupMePollNewUpdates(account, pod);
 }
 
 void
@@ -1366,6 +1378,7 @@ GroupMeUpdatePhoto(GroupMeAccount *account,
 {
   RequestData *request;
   const gchar *host;
+  gchar *url;
 
   GroupMeLogInfo("groupme", 
 		"UpdatePhoto(%s, %d)\n",
@@ -1378,12 +1391,13 @@ GroupMeUpdatePhoto(GroupMeAccount *account,
   }
 
   GroupMeDebugMsg(account, pod, "Fetching photo.");
-  host = GroupMeAccountHost(account);
   request = g_new0(RequestData, 1);
   request->account = account;
   request->pod = pod;
   request->update = update;
   request->index = update->index;
+  host = GroupMeAccountHost(account);
+  url = update->photoUrl;
   groupme_post_or_get(account, 
 		      GROUPME_METHOD_GET, 
 		      host, update->photoUrl,
@@ -1515,7 +1529,9 @@ GroupMePodSetName(GroupMeAccount *account,
   GroupMeLogInfo("groupme", 
 		"PodSetName(%s, %s)\n",
 		pod->id, name);
-  
+
+GroupMePollNewUpdates(account, pod);
+ return;  
   host = GroupMeAccountHost(account);
   url = g_strdup_printf("/api/pods/modifyPod");
   encodedName = g_strdup(purple_url_encode(name));
@@ -1733,9 +1749,10 @@ GroupMeSendMessage(GroupMeAccount *account,
 
 void
 GroupMeSendNextMessage(GroupMeAccount *account,
-		      GroupMePod *pod)
+		       GroupMePod *pod)
 {
   const gchar *host;
+  gchar *url;
   gchar *msg;
   gchar *unescapedMsg;
   gchar *encodedMsg;
@@ -1755,21 +1772,30 @@ GroupMeSendNextMessage(GroupMeAccount *account,
   unescapedMsg = purple_unescape_html(msg);
   encodedMsg = g_strdup(purple_url_encode(unescapedMsg));
   // source=pidgin doesn't seem to override source 
-  postData = g_strdup_printf("token=%s&podid=%s&text=%s",
-			     account->token,
-			     pod->id, 
-			     encodedMsg);
+  postData = g_strdup_printf("utf8=%%E2%%9C%%93"
+			     "&authenticity_token=%s"
+			     "&line%%5Btext%%5D=%s"
+			     "&commit=Send", 
+			     //encodedUtf8,
+			     account->authenticity_token,
+			     encodedMsg
+			     );
   g_free(encodedMsg);
   g_free(unescapedMsg);
   
   // send request (fire & forget)
   host = GroupMeAccountHost(account);
+  url = g_strdup_printf("/groups/%s/lines",
+			purple_url_encode(pod->id)
+			);
   groupme_post_or_get(account, 
-		     GROUPME_METHOD_POST, 
-		     host, "/api/updates/createUpdate", 
+		     GROUPME_METHOD_POST | 
+		     GROUPME_METHOD_SSL, 
+		     host, url, 
 		     postData,
 		     GroupMeSendNextMessageCB, pod,
 		     TRUE);
+  g_free(url);
   g_free(postData);
 }
 		  

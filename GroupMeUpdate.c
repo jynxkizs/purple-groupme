@@ -187,14 +187,14 @@ GroupMeUpdateFromJson(const gchar *json)
   gint64 ctTime;
   time_t timestamp;
   const gchar *location;
-  gdouble lat;
-  gdouble lon;
+  const gchar *lat;
+  const gchar *lon;
   gboolean hasPhoto;
   const gchar *photoUrl;
   gboolean isAdmin;
   const gchar *text;
   const gchar *uid;
-  gint index;
+  const gchar *id;
   
   // get name
   name = json_object_pair_value(json, "name");
@@ -213,14 +213,14 @@ GroupMeUpdateFromJson(const gchar *json)
 
   // get msg location (optional)
   location = json_object_pair_value(json, "location");
-  lat = 0.0f;
-  lon = 0.0f;
+  lat = NULL;
+  lon = NULL;
   if (location) {
-    if (!json_object_pair_value_named_const_equals(json, "lat", "null")) {
-      lat = json_object_pair_value_float(json, "lat");
+    if (!json_object_pair_value_named_const_equals(location, "lat", "null")) {
+      lat = json_object_pair_value(location, "lat");
     }
-    if (!json_object_pair_value_named_const_equals(json, "lng", "null")) {
-      lon = json_object_pair_value_float(json, "lng");
+    if (!json_object_pair_value_named_const_equals(location, "lng", "null")) {
+      lon = json_object_pair_value(location, "lng");
     }
   }
   
@@ -243,7 +243,11 @@ GroupMeUpdateFromJson(const gchar *json)
   isAdmin = json_object_pair_value_named_const_equals(json, "system", "true");
 
   // get message id
-  index = json_object_pair_value_int(json, "id");
+  id = json_object_pair_value(json, "id");
+  if (!id) {
+    GroupMeLogWarn("groupme", "update: no id\n");
+    return NULL;
+  }
 
   // get uid
   uid = json_object_pair_value(json, "user_id");
@@ -254,13 +258,17 @@ GroupMeUpdateFromJson(const gchar *json)
 
   // success, return a new update
   newUpdate = GroupMeUpdateNew();
-  newUpdate->index = index;
+  newUpdate->index = json_string_to_int(id);
   newUpdate->name = json_string_dup(name);
   newUpdate->text = json_string_dup(text);
   newUpdate->uid = json_string_dup(uid);
   newUpdate->timestamp = timestamp;
-  newUpdate->lat = lat;
-  newUpdate->lon = lon;
+  if (lat) {
+    newUpdate->lat = json_string_to_float(lat);
+  }
+  if (lon) {
+    newUpdate->lon = json_string_to_float(lon);
+  }
   newUpdate->hasPhoto = hasPhoto;
   newUpdate->photoUrl = json_string_dup(photoUrl);
   newUpdate->isAdmin = isAdmin;

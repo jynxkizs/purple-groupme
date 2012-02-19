@@ -184,8 +184,7 @@ static void groupme_connection_process_data(GroupMeConnection *conn)
     tmp = g_memdup(tmp, len + 1);
     tmp[len] = '\0';
     conn->rx_buf[conn->rx_len - len] = '\0';
-    purple_debug_misc("groupme", "response headers\n%s\n",
-		      conn->rx_buf);
+    //purple_debug_misc("groupme", "response headers\n%s\n", conn->rx_buf);
     groupme_update_cookies(conn->na, conn->rx_buf);
 		
     if (strstr(conn->rx_buf, "Content-Encoding: gzip"))
@@ -553,8 +552,8 @@ void groupme_post_or_get(GroupMeAccount *na,
   g_string_append_printf(request, "Accept-Language: %s\r\n", language_names);
   g_free(language_names);
 
-  purple_debug_misc("groupme", "sending request headers:\n%s\n",
-		    request->str);
+  //purple_debug_misc("groupme", "sending request headers:\n%s\n",
+  //		    request->str);
 
   g_string_append_printf(request, "\r\n");
   if (method & GROUPME_METHOD_POST)
