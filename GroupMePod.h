@@ -39,6 +39,7 @@ struct _GroupMePod {
   GList  *nextUpdateDisplayed;
   gint   lastUpdateId;
 
+  gboolean pollOutstanding;
   guint retryPollPodPeriod;
   guint retryPollPodTimeout;
   guint catchupPodTimeout;

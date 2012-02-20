@@ -29,7 +29,7 @@
 #include "groupme_html.h"
 
 // constants
-#define BLIST_GROUP_NAME "GroupMe Pods"
+#define BLIST_GROUP_NAME "GroupMe Chats"
 
 // global variables
 gboolean gCheckedVersion = FALSE;
@@ -1010,6 +1010,7 @@ GroupMeSeedPod(GroupMeAccount *account, GroupMePod *pod)
 			purple_url_encode(pod->id), 
 			account->token);
   GroupMeLogInfo("groupme", "%s", url);
+  pod->pollOutstanding = TRUE;
   groupme_post_or_get(account, 
 		      GROUPME_METHOD_GET | 
 		      GROUPME_METHOD_SSL, 
@@ -1090,6 +1091,11 @@ GroupMeRetryPollNewUpdates(GroupMeAccount *account,
 		 "Scheduling retry poll for updates (%d sec)...\n",
 		 pod->retryPollPodPeriod);
 
+  if (pod->retryPollPodTimeout) {
+    purple_timeout_remove(pod->retryPollPodTimeout);
+    pod->retryPollPodTimeout = 0;
+  }
+
   pod->retryPollPodTimeout = 
     purple_timeout_add_seconds(pod->retryPollPodPeriod,
 			       GroupMeRetryPollNewUpdatesTO,
@@ -1106,8 +1112,7 @@ GroupMeRetryPollNewUpdatesTO(gpointer data)
 		 "Retrying poll for updates...\n");
 
   request->pod->retryPollPodTimeout = 0;
-  // Pickup lost messages
-  //GroupMeSeedPod(request->account, request->pod);
+
   // Pickup new messages
   GroupMePollNewUpdates(request->account, request->pod);
 
@@ -1126,7 +1131,11 @@ GroupMePollNewUpdates(GroupMeAccount *account,
   GroupMeLogInfo("groupme", 
 		"PollNewUpdates(%s)\n",
 		pod->title);
-  
+
+  if (pod->pollOutstanding) {
+    return;
+  }
+
   //fetch updates for this pod
   newRequest = g_new0(RequestData, 1);
   newRequest->account = account;
@@ -1137,6 +1146,7 @@ GroupMePollNewUpdates(GroupMeAccount *account,
 			account->token,
 			pod->lastUpdateId);
   GroupMeLogInfo("groupme", "%s%s", host, url);
+  pod->pollOutstanding = TRUE;
   groupme_post_or_get(account, 
 		      GROUPME_METHOD_GET | 
 		      GROUPME_METHOD_SSL, 
@@ -1166,6 +1176,7 @@ GroupMePollNewUpdatesCB(GroupMeAccount *account,
 
   request = (RequestData *)userData;
   pod = request->pod;
+  pod->pollOutstanding = FALSE;
   //initialize = (pod->updates == NULL);
 
   g_free(request);
@@ -1264,7 +1275,6 @@ GroupMePollNewUpdatesCB(GroupMeAccount *account,
   // poll again for new updates
   pod->retryPollPodPeriod = 0;
   GroupMeRetryPollNewUpdates(account, pod);
-  //GroupMePollNewUpdates(account, pod);
 }
 
 void
@@ -1377,32 +1387,70 @@ GroupMeUpdatePhoto(GroupMeAccount *account,
 		   GroupMeUpdate *update)
 {
   RequestData *request;
-  const gchar *host;
+  gchar *tmp;
+  gchar *host;
   gchar *url;
+  gint  method;
 
   GroupMeLogInfo("groupme", 
 		"UpdatePhoto(%s, %d)\n",
 		pod->id, 
 		update->index);
 
-  //fetch photo for this update
   if (!update->photoUrl) {
+    GroupMeLogMisc("groupme", 
+		   "no photoUrl");
     return;
   }
 
+  // extract host and relative url from PhotoUrl
+  method = 0;
+  if (strstr(update->photoUrl, "https://")) {
+    method = GROUPME_METHOD_SSL;
+  }
+
+  tmp = strstr(update->photoUrl, "//");
+  if (!tmp) {
+    GroupMeLogWarn("groupme", 
+		   "could not find host in photoUrl: %s",
+		   update->photoUrl);
+    return;
+  }
+  host = g_strdup(tmp+2);
+  tmp = strstr(host, "/");
+  if (!tmp) {
+    GroupMeLogWarn("groupme", 
+		   "could not find relativeUrl in photoUrl: %s",
+		   update->photoUrl);
+    g_free(host);
+    return;
+  }  
+  // copy relative url
+  url = g_strdup(tmp);
+  // remove relative url from host
+  *tmp = 0;
+
   GroupMeDebugMsg(account, pod, "Fetching photo.");
+  GroupMeLogInfo("groupme",
+		 "fetching photo: %s %s %s\n",
+		 (method?"https://":"http://"),
+		 host,
+		 url);
+  // fetch the image data
   request = g_new0(RequestData, 1);
   request->account = account;
   request->pod = pod;
   request->update = update;
   request->index = update->index;
-  host = GroupMeAccountHost(account);
-  url = update->photoUrl;
   groupme_post_or_get(account, 
-		      GROUPME_METHOD_GET, 
-		      host, update->photoUrl,
+		      GROUPME_METHOD_GET |
+		      method, 
+		      host, url,
 		      NULL, GroupMeUpdatePhotoCB, 
 		      request, TRUE);
+
+  g_free(host);
+  g_free(url);
 }
 
 void 
@@ -1818,6 +1866,13 @@ GroupMeSendNextMessageCB(GroupMeAccount *account,
   pod->toSend = g_slist_remove(pod->toSend, (gpointer)msg);
   g_free(msg);
 
-  // try to send another message
-  GroupMeSendNextMessage(account, pod);
+  // if there are more messages in
+  // the queue, call SendNextMessage
+  if (g_slist_length(pod->toSend) > 0) {
+    GroupMeSendNextMessage(account, pod);
+  } else {
+    // force fetch messages
+    pod->retryPollPodPeriod = 0;
+    GroupMeRetryPollNewUpdates(account, pod);
+  }
 }
