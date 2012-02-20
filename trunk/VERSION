@@ -9,9 +9,10 @@
         "changes" : 
           [
 	    "Plugin uses GroupMe logo",
-	    "Download Photos fixed"
+	    "Download Photos fixed (assuming jpg)",
+	    "Download Pod Images fixed (assuming jpg)"
 	  ],
-	"svn-revision" : 7
+	"svn-revision" : 10
       },
       { 
 	"status" : "beta",

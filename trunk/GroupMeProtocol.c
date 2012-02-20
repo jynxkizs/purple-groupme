@@ -1281,25 +1281,72 @@ void
 GroupMePodImage(GroupMeAccount *account,
 	       GroupMePod *pod)
 {
-  RequestData *newRequest;
-  const gchar *host;
+  RequestData *request;
+  const gchar *fullUrl;
+  gchar *tmp;
+  gchar *host;
+  gchar *url;
+  gint  method;
   
   purple_debug_info("groupme", 
 		    "PodImage(%s, %s)\n",
 		    pod->id, 
 		    pod->imageUrl);
-  
-  //fetch details for this update
-  //fetch details for this update
-  newRequest = g_new0(RequestData, 1);
-  newRequest->account = account;
-  newRequest->pod = pod;
-  host = GroupMeAccountHost(account);
+
+  if (!pod->imageUrl) {
+    GroupMeLogMisc("groupme", 
+		   "no imageUrl");
+    return;
+  }
+
+  // extract host and relative url from ImageUrl
+  fullUrl = pod->imageUrl;
+
+  method = 0;
+  if (strstr(fullUrl, "https://")) {
+    method = GROUPME_METHOD_SSL;
+  }
+
+  tmp = strstr(fullUrl, "//");
+  if (!tmp) {
+    GroupMeLogWarn("groupme", 
+		   "could not find host in fullUrl: %s",
+		   fullUrl);
+    return;
+  }
+  host = g_strdup(tmp+2);
+  tmp = strstr(host, "/");
+  if (!tmp) {
+    GroupMeLogWarn("groupme", 
+		   "could not find relativeUrl in fullUrl: %s",
+		   fullUrl);
+    g_free(host);
+    return;
+  }  
+  // copy relative url
+  url = g_strdup(tmp);
+  // remove relative url from host
+  *tmp = 0;
+
+  GroupMeDebugMsg(account, pod, "Fetching pod image.");
+  GroupMeLogInfo("groupme",
+		 "fetching pod image: %s %s %s\n",
+		 (method?"https://":"http://"),
+		 host,
+		 url);
+  // fetch the image data
+  request = g_new0(RequestData, 1);
+  request->account = account;
+  request->pod = pod;
   groupme_post_or_get(account, 
-		     GROUPME_METHOD_GET, 
-		     host, pod->imageUrl,
-		     NULL, GroupMePodImageCB, 
-		     newRequest, TRUE);
+		      GROUPME_METHOD_GET |
+		      method, 
+		      host, url,
+		      NULL, GroupMePodImageCB, 
+		      request, TRUE);
+
+  g_free(host);
+  g_free(url);
 }
 
 void 
@@ -1387,6 +1434,7 @@ GroupMeUpdatePhoto(GroupMeAccount *account,
 		   GroupMeUpdate *update)
 {
   RequestData *request;
+  const gchar *fullUrl;
   gchar *tmp;
   gchar *host;
   gchar *url;
@@ -1404,24 +1452,26 @@ GroupMeUpdatePhoto(GroupMeAccount *account,
   }
 
   // extract host and relative url from PhotoUrl
+  fullUrl = update->photoUrl;
+
   method = 0;
-  if (strstr(update->photoUrl, "https://")) {
+  if (strstr(fullUrl, "https://")) {
     method = GROUPME_METHOD_SSL;
   }
 
-  tmp = strstr(update->photoUrl, "//");
+  tmp = strstr(fullUrl, "//");
   if (!tmp) {
     GroupMeLogWarn("groupme", 
-		   "could not find host in photoUrl: %s",
-		   update->photoUrl);
+		   "could not find host in fullUrl: %s",
+		   fullUrl);
     return;
   }
   host = g_strdup(tmp+2);
   tmp = strstr(host, "/");
   if (!tmp) {
     GroupMeLogWarn("groupme", 
-		   "could not find relativeUrl in photoUrl: %s",
-		   update->photoUrl);
+		   "could not find relativeUrl in fullUrl: %s",
+		   fullUrl);
     g_free(host);
     return;
   }  
