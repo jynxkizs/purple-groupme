@@ -5,6 +5,18 @@
 	"status" : "beta",
         "major" : 0,
         "minor" : 7,
+        "revision" : 2,
+        "changes" : 
+          [
+	    "Plugin uses GroupMe logo",
+	    "Download Photos fixed"
+	  ],
+	"svn-revision" : 7
+      },
+      { 
+	"status" : "beta",
+        "major" : 0,
+        "minor" : 7,
         "revision" : 0,
         "changes" : 
           [
