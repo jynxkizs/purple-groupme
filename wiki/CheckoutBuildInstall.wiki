@@ -45,9 +45,9 @@ make libgroupme.so
 
 As a convenience, a slightly different command will make and "install" the plugin.
 {{{
-cd purple-beluga
+cd purple-groupme
 make clean
-make beluga
+make groupme
 }}}
 
 
