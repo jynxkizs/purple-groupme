@@ -30,6 +30,8 @@
 
 // constants
 #define BLIST_GROUP_NAME "GroupMe Chats"
+#define GROUPME_MIN_MSG_LENGTH   1
+#define GROUPME_MAX_MSG_LENGTH 160
 
 // global variables
 gboolean gCheckedVersion = FALSE;
@@ -1832,15 +1834,35 @@ GroupMeSendMessage(GroupMeAccount *account,
 		  const char *msg)
 {
   GroupMePod *pod;
+  gboolean onlyMessage;
+  gint len;
+  gchar *msgPart;
+
   pod = GroupMeAccountGetPod(account, podId);
 
-  // add this message to the pod's outbox
-  pod->toSend = g_slist_append(pod->toSend, 
-			       (gpointer)g_strdup(msg));
-  
   // if the new message is the only one in 
+  // the queue, we will call SendNextMessage
+  onlyMessage = (g_slist_length(pod->toSend) == 0);
+
+  // add this message to the pod's outbox
+  len = strlen(msg);
+  while (len > GROUPME_MAX_MSG_LENGTH) {
+    msgPart = g_strdup(msg);
+    msgPart[GROUPME_MAX_MSG_LENGTH] = (gchar)0;
+    pod->toSend = g_slist_append(pod->toSend, 
+			       (gpointer)msgPart);
+    msg += GROUPME_MAX_MSG_LENGTH;
+    len = strlen(msg);
+  }
+  if (len >= GROUPME_MIN_MSG_LENGTH) {
+    msgPart = g_strdup(msg);
+    pod->toSend = g_slist_append(pod->toSend, 
+			       (gpointer)msgPart);
+  }
+
+  // if the new messages are the only ones in 
   // the queue, call SendNextMessage
-  if (g_slist_length(pod->toSend) == 1) {
+  if (onlyMessage) {
     GroupMeSendNextMessage(account, pod);
   }
 }
