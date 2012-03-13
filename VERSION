@@ -3,6 +3,17 @@
     [
       { 
 	"status" : "beta",
+        "major" : 1,
+        "minor" : 0,
+        "revision" : 0,
+        "changes" : 
+          [
+	    "Auto-split messages larger than GroupMe message length limit"
+	  ],
+	"svn-revision" : 17
+      },
+      { 
+	"status" : "stable",
         "major" : 0,
         "minor" : 7,
         "revision" : 2,
