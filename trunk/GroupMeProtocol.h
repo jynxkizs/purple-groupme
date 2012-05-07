@@ -52,7 +52,7 @@ void
 GroupMePodSetName(GroupMeAccount *account,
 		 GroupMePod *pod,
 		 const gchar *name);
-
+/*
 void
 GroupMePodAddMembers(GroupMeAccount *account, 
 		    GroupMePod *pod, 
@@ -71,6 +71,11 @@ GroupMePodRemoveMember(GroupMeAccount *account,
 void
 GroupMePodLeave(GroupMeAccount *account,
 	       GroupMePod *pod);
+*/
+
+void
+GroupMePodDelete(GroupMeAccount *account,
+		 GroupMePod *pod);
 
 void
 GroupMeHintMsg(GroupMeAccount *account,
