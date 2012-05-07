@@ -51,7 +51,9 @@ void GroupMeDisplayNewUpdates(GroupMeAccount *account, GroupMePod *pod);
 void PurpleGroupMeCheckVersionCB(GroupMeAccount *account, gchar const *requestUrl, gchar *json, gsize jsonLen, gpointer userData);
 void GroupMeContactHost(GroupMeAccount *account);
 void GroupMeSeedAccount(GroupMeAccount *account);
-void GroupMeGetPodDetails(GroupMeAccount *account, GroupMePod *pod);
+void GroupMeCheckNewPods(GroupMeAccount *account);
+void GroupMeUpdatePods(GroupMeAccount *account);
+//void GroupMeGetPodDetails(GroupMeAccount *account, GroupMePod *pod);
 void GroupMeSeedPod(GroupMeAccount *account, GroupMePod *pod);
 void GroupMePodImage(GroupMeAccount *account, GroupMePod *pod);
 void GroupMeRetryPollNewUpdates(GroupMeAccount *account, GroupMePod *pod);
@@ -69,7 +71,7 @@ void GroupMeSignInPageCB(GroupMeAccount *account, gchar const *requestUrl, gchar
 void GroupMeLoginCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
 void GroupMeSeedAccountCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
 void GroupMeMaybeAddNewPod(GroupMeAccount *account, GroupMePod *newPod);
-void GroupMeGetPodDetailsCB(GroupMeAccount *account, gchar const *requestUrl, gchar *data, gsize dataLen, gpointer userData);
+//void GroupMeGetPodDetailsCB(GroupMeAccount *account, gchar const *requestUrl, gchar *data, gsize dataLen, gpointer userData);
 void GroupMePodImageCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
 void GroupMePollNewUpdatesCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
 void GroupMeUpdateDetailsCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
@@ -336,6 +338,7 @@ GroupMeDisplayNewUpdates(GroupMeAccount *account,
     msgFlags = PURPLE_MESSAGE_RECV;
     msgFlags |= isFromLocalUser?PURPLE_MESSAGE_NICK:0;
     msgFlags |= update->isDelayed?PURPLE_MESSAGE_DELAYED:0;
+    msgFlags |= update->isAdmin?PURPLE_MESSAGE_SYSTEM:0;
     GroupMeLogMisc("groupme", "msg:\n\t(%ld) %s (%s):%s\n",
 		   update->timestamp, update->name, update->uid, update->text);
 
@@ -353,7 +356,8 @@ GroupMeDisplayNewUpdates(GroupMeAccount *account,
   }
 
   if (updatePodDetails) {
-    GroupMeGetPodDetails(account, pod);
+    // GroupMeGetPodDetails(account, pod); is unimplemented
+    GroupMeUpdatePods(account);
   }
 }
 
@@ -763,6 +767,12 @@ GroupMeCheckNewPods(GroupMeAccount *account)
   GroupMeSeedAccount(account);
 }
 
+void
+GroupMeUpdatePods(GroupMeAccount *account)
+{
+  GroupMeSeedAccount(account);
+}
+
 gboolean GroupMeSeedAccountTO(gpointer data)
 {
   GroupMeSeedAccount((GroupMeAccount *)data);
@@ -855,6 +865,8 @@ GroupMeSeedAccountCB(GroupMeAccount *account,
 void
 GroupMeMaybeAddNewPod(GroupMeAccount *account, GroupMePod *newPod)
 {
+  GroupMePod *oldPod;
+
   if (!newPod) {
     GroupMeLogError("groupme", "bad pod data\n");
     return;
@@ -867,6 +879,12 @@ GroupMeMaybeAddNewPod(GroupMeAccount *account, GroupMePod *newPod)
 
   if (GroupMeAccountHasPod(account, newPod->id)) {
     GroupMeLogInfo("groupme", "pod already exists, skipping.\n");
+    // check if we need to update the title
+    oldPod = GroupMeAccountGetPod(account, newPod->id);
+    if (g_ascii_strncasecmp(newPod->title, oldPod->title, strlen(newPod->title))) {
+      GroupMePodSetTitle(oldPod, newPod->title);
+      GroupMeUpdateBuddy(account, oldPod);
+    }
     GroupMePodFree(newPod);
     return;
   }
@@ -881,11 +899,11 @@ GroupMeMaybeAddNewPod(GroupMeAccount *account, GroupMePod *newPod)
   //GroupMePollNewUpdates(account, newPod);
 }
 
+/*
 void
 GroupMeGetPodDetails(GroupMeAccount *account, 
 		    GroupMePod *pod)
 {
-  /*
   RequestData *newRequest;
   const gchar *host;
   gchar *url;
@@ -926,7 +944,6 @@ GroupMeGetPodDetails(GroupMeAccount *account,
 		     NULL, GroupMeGetPodDetailsCB, 
 		     newRequest, TRUE);
   g_free(url);
-  */
 }
 
 void 
@@ -1005,6 +1022,7 @@ GroupMeGetPodDetailsCB(GroupMeAccount *account,
 
   GroupMeUpdateBuddy(account, pod);
 }
+*/
 
 void
 GroupMeSeedPod(GroupMeAccount *account, GroupMePod *pod)
@@ -1032,7 +1050,7 @@ GroupMeSeedPod(GroupMeAccount *account, GroupMePod *pod)
 			  account->token,
 			  pod->lastUpdateId);
   }
-  GroupMeLogInfo("groupme", "SeedPodUrl: %s", url);
+  GroupMeLogInfo("groupme", "SeedPodUrl: %s\n", url);
   pod->pollOutstanding = TRUE;
   groupme_post_or_get(account, 
 		      GROUPME_METHOD_GET | 
@@ -1106,11 +1124,17 @@ GroupMePollNewUpdates(GroupMeAccount *account,
   newRequest->account = account;
   newRequest->pod = pod;
   host = GroupMeAccountV2Host(account);
-  url = g_strdup_printf("/groups/%s/messages?token=%s&since_id=%d", 
-			purple_url_encode(pod->id), 
-			account->token,
-			pod->lastUpdateId);
-  GroupMeLogInfo("groupme", "PollNewUpdatesUrl: %s%s", host, url);
+  if (pod->lastUpdateId == -1) {
+    url = g_strdup_printf("/groups/%s/messages?token=%s", 
+			  purple_url_encode(pod->id), 
+			  account->token);
+  } else {
+    url = g_strdup_printf("/groups/%s/messages?token=%s&since_id=%d", 
+			  purple_url_encode(pod->id), 
+			  account->token,
+			  pod->lastUpdateId);
+  }
+  GroupMeLogInfo("groupme", "PollNewUpdatesUrl: %s%s\n", host, url);
   pod->pollOutstanding = TRUE;
   groupme_post_or_get(account, 
 		      GROUPME_METHOD_GET | 
@@ -1134,6 +1158,7 @@ GroupMePollNewUpdatesCB(GroupMeAccount *account,
   const gchar *json;
   const gchar *root;
   const gchar *result;
+  const gchar *meta;
   const gchar *messages;
   //gboolean initialize;
   GList  *updates;
@@ -1148,7 +1173,7 @@ GroupMePollNewUpdatesCB(GroupMeAccount *account,
   GroupMeLogInfo("groupme", 
 		"PollNewUpdatesCB(%s)\n",
 		pod->title);
-  GroupMeLogMisc("groupme", "PollNewUpdatesResponse:\n%s", data);
+  GroupMeLogMisc("groupme", "PollNewUpdatesResponse:\n%s\n", data);
 
   // extend retry poll period
   if (pod->retryPollPodPeriod < 15) {
@@ -1177,6 +1202,24 @@ GroupMePollNewUpdatesCB(GroupMeAccount *account,
     if (json_object_pair_value_string_equals(root, 
 					     "error",
 					     "user not authorized")) {
+      GroupMeLogWarn("groupme", "user has been removed from pod\n");
+      GroupMeRemoveBuddy(account, pod);
+      GroupMeAccountRemovePod(account, pod);
+      //GroupMePodDestroyPhotoPath(account, newPod);
+      return;
+    }
+
+    // unhandled response, retry
+    GroupMeRetryPollNewUpdates(account, pod);
+    return;
+  }
+
+  if (json_named_const_equals(result, "null")) {
+    GroupMeLogWarn("groupme", "response field is null\n");
+
+    // check if user has been removed from pod
+    meta = json_object_pair_value(root, "meta");
+    if (meta && (json_object_pair_value_int(meta, "code") == 404)) {
       GroupMeLogWarn("groupme", "user has been removed from pod\n");
       GroupMeRemoveBuddy(account, pod);
       GroupMeAccountRemovePod(account, pod);
@@ -1279,7 +1322,7 @@ GroupMePodImage(GroupMeAccount *account,
   tmp = strstr(fullUrl, "//");
   if (!tmp) {
     GroupMeLogWarn("groupme", 
-		   "could not find host in fullUrl: %s",
+		   "could not find host in fullUrl: %s\n",
 		   fullUrl);
     return;
   }
@@ -1287,7 +1330,7 @@ GroupMePodImage(GroupMeAccount *account,
   tmp = strstr(host, "/");
   if (!tmp) {
     GroupMeLogWarn("groupme", 
-		   "could not find relativeUrl in fullUrl: %s",
+		   "could not find relativeUrl in fullUrl: %s\n",
 		   fullUrl);
     g_free(host);
     return;
@@ -1431,7 +1474,7 @@ GroupMeUpdatePhoto(GroupMeAccount *account,
   tmp = strstr(fullUrl, "//");
   if (!tmp) {
     GroupMeLogWarn("groupme", 
-		   "could not find host in fullUrl: %s",
+		   "could not find host in fullUrl: %s\n",
 		   fullUrl);
     return;
   }
@@ -1439,7 +1482,7 @@ GroupMeUpdatePhoto(GroupMeAccount *account,
   tmp = strstr(host, "/");
   if (!tmp) {
     GroupMeLogWarn("groupme", 
-		   "could not find relativeUrl in fullUrl: %s",
+		   "could not find relativeUrl in fullUrl: %s\n",
 		   fullUrl);
     g_free(host);
     return;
@@ -1674,28 +1717,16 @@ GroupMePodSetName(GroupMeAccount *account,
 }
 
 void
-GroupMePodLeave(GroupMeAccount *account,
-	       GroupMePod *pod)
-{
-  GroupMeLogInfo("groupme", 
-		"PodLeave(%s)\n",
-		pod->id);
-  GroupMePodRemoveMember(account, pod, account->uid);
-}
-
-void
-GroupMePodRemoveMember(GroupMeAccount *account,
-		      GroupMePod *pod,
-		      const gchar *uid)
+GroupMePodDelete(GroupMeAccount *account,
+		 GroupMePod *pod)
 {
   const gchar *host;
   gchar *postData;
   gchar *url;
-  gchar *encodedUid;
   
   GroupMeLogInfo("groupme", 
-		"PodRemoveMember(%s, %s)\n",
-		pod->id, uid);
+		"PodDelete(%s)\n",
+		pod->id);
 
   // form post data
   postData = g_strdup_printf("_method=delete"
@@ -1704,12 +1735,9 @@ GroupMePodRemoveMember(GroupMeAccount *account,
 
   // send request (fire & forget)
   host = GroupMeAccountHost(account);
-  encodedUid = g_strdup(purple_url_encode(uid));
-  url = g_strdup_printf("/groups/%s/memberships/%s",
-			purple_url_encode(pod->id),
-			encodedUid
+  url = g_strdup_printf("/groups/%s/",
+			purple_url_encode(pod->id)
 			);
-  g_free(encodedUid);
   groupme_post_or_get(account, 
 		     GROUPME_METHOD_POST | 
 		     GROUPME_METHOD_SSL, 
@@ -1843,6 +1871,57 @@ GroupMeSendNextMessageCB(GroupMeAccount *account,
 }
 
 /*
+void
+GroupMePodLeave(GroupMeAccount *account,
+		GroupMePod *pod)
+{
+  GroupMeLogInfo("groupme", 
+		"PodLeave(%s)\n",
+		pod->id);
+  //GroupMePodRemoveMember(account, pod, account->membership_id);
+  GroupMeLogWarn("groupme", 
+		"PodLeave(%s) - unimplemented\n",
+		pod->id);
+}
+
+void
+GroupMePodRemoveMember(GroupMeAccount *account,
+		      GroupMePod *pod,
+		      const gchar *membership_id)
+{
+  const gchar *host;
+  gchar *postData;
+  gchar *url;
+  gchar *encodedMembershipId;
+  
+  GroupMeLogInfo("groupme", 
+		"PodRemoveMember(%s, %s)\n",
+		pod->id, uid);
+
+  // form post data
+  postData = g_strdup_printf("_method=delete"
+			     "&authenticity_token=%s",
+			     account->authenticity_token);
+
+  // send request (fire & forget)
+  host = GroupMeAccountHost(account);
+  encodedMembershipId = g_strdup(purple_url_encode(membership_id));
+  url = g_strdup_printf("/groups/%s/memberships/%s",
+			purple_url_encode(pod->id),
+			encodedMembershipId
+			);
+  g_free(encodedMembershipId);
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_POST | 
+		     GROUPME_METHOD_SSL, 
+		     host, url, 
+		     postData,
+		     NULL, NULL,
+		     TRUE);
+  g_free(url);
+  g_free(postData);
+}
+
 void
 GroupMePodAddMembers(GroupMeAccount *account, 
 		    GroupMePod *pod, 

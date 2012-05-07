@@ -9,10 +9,12 @@
         "changes" : 
           [
 	    "Only display messages which have not been shown on this computer yet",
-	    "Auto-split messages at new GroupMe message length limit (450)",
-	    "/setnick <name> sets your nickname in current group",
+	    "/nick <name> sets your nickname in current group",
 	    "/setgroupname <name> renames current group",
-	    "/leavegroup leaves current group",
+	    "/destroygroup destroys current group (owner only)",
+	    "Reflect Group name change in user interface",
+	    "Auto-split messages at 450 characters (per GroupMe changes)",
+	    "Correctly detect removal from group (per GroupMe changes)",
 	    ""
 	  ],
 	"svn-revision" : 21
