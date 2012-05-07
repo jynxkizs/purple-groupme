@@ -706,9 +706,6 @@ static void plugin_init(PurplePlugin *plugin)
   option = purple_account_option_string_new("Host", "host", "groupme.com");
   prpl_info->protocol_options = g_list_append(prpl_info->protocol_options, option);
   
-  option = purple_account_option_int_new("Initial Messages fetched", "seedFetchCount", 30);
-  prpl_info->protocol_options = g_list_append(prpl_info->protocol_options, option);
-  
   option = purple_account_option_string_new("Display Photo Link as", "photo", "(Photo)");
   prpl_info->protocol_options = g_list_append(prpl_info->protocol_options, option);
   
@@ -723,13 +720,13 @@ static void plugin_init(PurplePlugin *plugin)
 
   option = purple_account_option_bool_new("Display Debug Messages", "debugMsgs", FALSE);
   prpl_info->protocol_options = g_list_append(prpl_info->protocol_options, option);
-  /*
+/*
   option = purple_account_option_string_new("debug 1", "debug1", "");
   prpl_info->protocol_options = g_list_append(prpl_info->protocol_options, option);
   
   option = purple_account_option_string_new("debug 2", "debug2", "");
   prpl_info->protocol_options = g_list_append(prpl_info->protocol_options, option);
-  */
+*/
 }
 
 static PurplePluginProtocolInfo prpl_info = {

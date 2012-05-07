@@ -62,6 +62,7 @@ GroupMePodFree(GroupMePod *pod)
     purple_timeout_remove(pod->catchupPodTimeout);
   }
   g_free(pod->photosPath);
+  //g_free(pod->updatesPath);
   g_free(pod);
 }
 
@@ -134,6 +135,32 @@ GroupMePodFromJson(const gchar *json, const gchar **jsonEnd)
 
 //GroupMePod *
 //GroupMePodMembersFromHtml(gchar *html);
+
+void
+GroupMePodReadLastUpdateIndex(GroupMeAccount *account,
+			      GroupMePod *pod)
+{
+  gchar *key;
+  key = g_strdup_printf("pod_%s_lastUpdateId", 
+			pod->id);
+  pod->lastUpdateId = purple_account_get_int(account->account,
+					     key,
+					     -1);
+  g_free(key);
+}
+
+void
+GroupMePodWriteLastUpdateIndex(GroupMeAccount *account, 
+			       GroupMePod *pod)
+{
+  gchar *key;
+  key = g_strdup_printf("pod_%s_lastUpdateId", 
+			pod->id);
+  purple_account_set_int(account->account,
+			 key,
+			 pod->lastUpdateId);
+  g_free(key);
+}
 
 void
 GroupMePodSetTitle(GroupMePod *pod,
@@ -234,3 +261,69 @@ GroupMePodGeneratePhotoPath(GroupMeAccount *account,
   purple_build_dir(pod->photosPath, 0700);
 }
 
+/*
+void
+GroupMePodGenerateUpdatePath(GroupMeAccount *account,
+			     GroupMePod *pod,
+			     gchar *subdir)
+{
+  pod->updatesPath = g_strdup_printf("%s/updates/%s/%s", 
+				     account->storagePath,
+				     pod->id,
+				     subdirname);
+  purple_build_dir(pod->updatesPath, 0700);
+}
+
+void
+GroupMePodIsUpdateJsonCached(GroupMeAccount *account,
+			     GroupMePod *pod,
+			     GroupMeUpdate *update)
+{
+  gchar *filePath;
+
+  // build path
+  filePath = g_strdup_printf("%s/updates/%s/%d/%d.json", 
+			     account->storagePath,
+			     pod->id,
+			     ((update->timestamp/3600)/24),
+			     (update->timestamp%3600));
+  
+  // get file
+  
+
+}
+
+void
+GroupMePodCacheUpdateJson(GroupMeAccount *account,
+			  GroupMePod *pod,
+			  GroupMeUpdate *update,
+			  const gchar *json)
+{
+  gchar *path;
+  gchar *filePath;
+  gchar *jsonEnd;
+
+  // build path
+  path = g_strdup_printf("%s/updates/%s/%d", 
+			 account->storagePath,
+			 pod->id,
+			 ((update->timestamp/3600)/24));
+  purple_build_dir(pod->path, 0700);
+  
+  // build filename
+  filePath = g_strdup_printf("%s/%d.json", 
+			     (update->timestamp%3600));
+
+  // get data limit
+  jsonEnd = json_object_end(json);
+
+  // write json to file
+  purple_util_write_data_to_file_absolute(filePath, 
+					  json, 
+					  (jsonEnd-json)+1);
+
+  // cleanup
+  g_free(path);
+  g_free(filePath);
+}
+*/
