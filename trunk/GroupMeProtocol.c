@@ -1584,6 +1584,51 @@ GroupMeCreatePodCB(GroupMeAccount *account,
 }
 
 void
+GroupMePodSetNick(GroupMeAccount *account,
+		  GroupMePod *pod,
+		  const gchar *nick)
+{
+  const gchar *host;
+  gchar *postData;
+  gchar *url;
+  gchar *unescapedName;
+  gchar *encodedName;
+  
+  GroupMeLogInfo("groupme", 
+		"PodSetNick(%s, %s)\n",
+		pod->id, nick);
+
+  // form post data
+  unescapedName = purple_unescape_html(nick);
+  encodedName = g_strdup(purple_url_encode(unescapedName));
+  postData = g_strdup_printf("utf8=%%E2%%9C%%93"
+			     "&_method=put"
+			     "&authenticity_token=%s"
+			     "&nickname=%s", 
+			     //encodedUtf8,
+			     account->authenticity_token,
+			     encodedName
+			     );
+  g_free(encodedName);
+  g_free(unescapedName);
+  
+  // send request (fire & forget)
+  host = GroupMeAccountHost(account);
+  url = g_strdup_printf("/groups/%s",
+			purple_url_encode(pod->id)
+			);
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_POST | 
+		     GROUPME_METHOD_SSL, 
+		     host, url, 
+		     postData,
+		     NULL, NULL,
+		     TRUE);
+  g_free(url);
+  g_free(postData);
+}
+
+void
 GroupMePodSetName(GroupMeAccount *account,
 		  GroupMePod *pod,
 		  const gchar *name)
@@ -1591,198 +1636,41 @@ GroupMePodSetName(GroupMeAccount *account,
   const gchar *host;
   gchar *postData;
   gchar *url;
+  gchar *unescapedName;
   gchar *encodedName;
   
   GroupMeLogInfo("groupme", 
 		"PodSetName(%s, %s)\n",
 		pod->id, name);
 
-GroupMePollNewUpdates(account, pod);
- return;  
-  host = GroupMeAccountHost(account);
-  url = g_strdup_printf("/api/pods/modifyPod");
-  encodedName = g_strdup(purple_url_encode(name));
-  postData = g_strdup_printf("v=3&token=%s&podid=%s&what=%s",
-			     account->token, 
-			     pod->id,
-			     encodedName);
+  // form post data
+  unescapedName = purple_unescape_html(name);
+  encodedName = g_strdup(purple_url_encode(unescapedName));
+  postData = g_strdup_printf("utf8=%%E2%%9C%%93"
+			     "&_method=put"
+			     "&authenticity_token=%s"
+			     "&group%%5Btopic%%5D=%s",
+			     //encodedUtf8,
+			     account->authenticity_token,
+			     encodedName
+			     );
   g_free(encodedName);
-  groupme_post_or_get(account, 
-		     GROUPME_METHOD_POST, 
-		     host, url, 
-		     postData, NULL, 
-		     NULL, FALSE);
-  g_free(postData);
-  g_free(url);
-}
-
-void
-GroupMePodSetLocation(GroupMeAccount *account,
-		     GroupMePod *pod,
-		     const gchar *location)
-{
-  const gchar *host;
-  gchar *postData;
-  gchar *url;
-  gchar *encodedLocation;
+  g_free(unescapedName);
   
-  GroupMeLogInfo("groupme", 
-		"PodSetLocation(%s, %s)\n",
-		pod->id, location);
-  
+  // send request (fire & forget)
   host = GroupMeAccountHost(account);
-  url = g_strdup_printf("/api/pods/modifyPod");
-  encodedLocation = g_strdup(purple_url_encode(location));
-  postData = g_strdup_printf("v=3&token=%s&podid=%s&where=%s",
-			     account->token, 
-			     pod->id,
-			     encodedLocation);
-  g_free(encodedLocation);
+  url = g_strdup_printf("/groups/%s",
+			purple_url_encode(pod->id)
+			);
   groupme_post_or_get(account, 
-		     GROUPME_METHOD_POST, 
+		     GROUPME_METHOD_POST | 
+		     GROUPME_METHOD_SSL, 
 		     host, url, 
-		     postData, NULL, 
-		     NULL, FALSE);
-  g_free(postData);
+		     postData,
+		     NULL, NULL,
+		     TRUE);
   g_free(url);
-}
-
-void
-GroupMePodSetAddress(GroupMeAccount *account,
-		    GroupMePod *pod,
-		    const gchar *address)
-{
-  const gchar *host;
-  gchar *postData;
-  gchar *url;
-  gchar *encodedAddress;
-  
-  GroupMeLogInfo("groupme", 
-		"PodSetAddress(%s, %s)\n",
-		pod->id, address);
-  
-  host = GroupMeAccountHost(account);
-  url = g_strdup_printf("/api/pods/modifyPod");
-  encodedAddress = g_strdup(purple_url_encode(address));
-  postData = g_strdup_printf("v=3&token=%s&podid=%s&addr=%s",
-			     account->token, 
-			     pod->id,
-			     encodedAddress);
-  g_free(encodedAddress);
-  groupme_post_or_get(account, 
-		     GROUPME_METHOD_POST, 
-		     host, url, 
-		     postData, NULL, 
-		     NULL, FALSE);
   g_free(postData);
-  g_free(url);
-}
-
-void
-GroupMePodAddMembers(GroupMeAccount *account, 
-		    GroupMePod *pod, 
-		    gchar *argsString)
-{
-  gchar **split;
-  int n;
-
-  GroupMeLogInfo("groupme", 
-		"PodAddMember(%s)\n",
-		pod->id);
-
-  split = g_strsplit(argsString, ",", 0);
-  for (n=0; split[n]; ++n) {
-    GroupMePodAddMember(account, pod, split[n]);
-  }
-  g_strfreev(split);
-}
-
-void
-GroupMePodAddMember(GroupMeAccount *account, 
-		     GroupMePod *pod, 
-		     gchar *member)
-{
-  const gchar *host;
-  gchar *postData;
-  gchar *url;
-  gchar *invites;
-  
-  GroupMeLogInfo("groupme", 
-		"PodInviteEmail(%s, %s)\n",
-		pod->id, member);
-  
-  host = GroupMeAccountHost(account);
-  url = g_strdup_printf("/api/pods/modifyPod");
-  // POST data:
-  // invites=[{"picked":["email"],"idents":["email"]}]
-  invites = g_strdup_printf("[{\"picked\":[\"%s\"],"
-			    "\"idents\":[\"%s\"]}]", 
-			    member,
-			    member);
-  postData = g_strdup_printf("v=3&token=%s&podid=%s&invites=%s", 
-			     account->token,
-  			     pod->id,
-  			     purple_url_encode(invites));
-  g_free(invites);
-  groupme_post_or_get(account, 
-		     GROUPME_METHOD_POST, 
-		     host, url, 
-		     postData, NULL, 
-		     NULL, FALSE);
-  g_free(postData);
-  g_free(url);  
-}
-
-void
-GroupMePodRemoveMembers(GroupMeAccount *account,
-		    GroupMePod *pod, 
-		    gchar *argsString)
-{
-  gchar **split;
-  int n;
-
-  GroupMeLogInfo("groupme", 
-		"PodRemoveMember(%s)\n",
-		pod->id);
-
-  split = g_strsplit(argsString, ",", 0);
-  for (n=0; split[n]; ++n) {
-    GroupMePodRemoveMember(account, pod, split[n]);
-  }
-  g_strfreev(split);
-}
-
-void
-GroupMePodRemoveMember(GroupMeAccount *account,
-		      GroupMePod *pod,
-		      const gchar *uid)
-{
-  const gchar *host;
-  gchar *postData;
-  gchar *url;
-  gchar *userList;
-  
-  GroupMeLogInfo("groupme", 
-		"PodRemoveUser(%s, %s)\n",
-		pod->id, uid);
-  
-  host = GroupMeAccountHost(account);
-  url = g_strdup_printf("/api/pods/modifyPod");
-  // POST data:
-  // rmusers=["4d6d4f5c78f2f240e0002086"]&podid=4de21d23e694aa6c05004dfd&v=3
-  userList = g_strdup_printf("[\"%s\"]", uid);
-  postData = g_strdup_printf("v=3&token=%s&podid=%s&rmusers=%s", 
-			     account->token,
-  			     pod->id,
-  			     purple_url_encode(userList));
-  g_free(userList);
-  groupme_post_or_get(account, 
-		     GROUPME_METHOD_POST, 
-		     host, url, 
-		     postData, NULL, 
-		     NULL, FALSE);
-  g_free(postData);
-  g_free(url);
 }
 
 void
@@ -1793,6 +1681,44 @@ GroupMePodLeave(GroupMeAccount *account,
 		"PodLeave(%s)\n",
 		pod->id);
   GroupMePodRemoveMember(account, pod, account->uid);
+}
+
+void
+GroupMePodRemoveMember(GroupMeAccount *account,
+		      GroupMePod *pod,
+		      const gchar *uid)
+{
+  const gchar *host;
+  gchar *postData;
+  gchar *url;
+  gchar *encodedUid;
+  
+  GroupMeLogInfo("groupme", 
+		"PodRemoveMember(%s, %s)\n",
+		pod->id, uid);
+
+  // form post data
+  postData = g_strdup_printf("_method=delete"
+			     "&authenticity_token=%s",
+			     account->authenticity_token);
+
+  // send request (fire & forget)
+  host = GroupMeAccountHost(account);
+  encodedUid = g_strdup(purple_url_encode(uid));
+  url = g_strdup_printf("/groups/%s/memberships/%s",
+			purple_url_encode(pod->id),
+			encodedUid
+			);
+  g_free(encodedUid);
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_POST | 
+		     GROUPME_METHOD_SSL, 
+		     host, url, 
+		     postData,
+		     NULL, NULL,
+		     TRUE);
+  g_free(url);
+  g_free(postData);
 }
 
 void
@@ -1915,3 +1841,79 @@ GroupMeSendNextMessageCB(GroupMeAccount *account,
     GroupMeRetryPollNewUpdates(account, pod);
   }
 }
+
+/*
+void
+GroupMePodAddMembers(GroupMeAccount *account, 
+		    GroupMePod *pod, 
+		    gchar *argsString)
+{
+  gchar **split;
+  int n;
+
+  GroupMeLogInfo("groupme", 
+		"PodAddMember(%s)\n",
+		pod->id);
+
+  split = g_strsplit(argsString, ",", 0);
+  for (n=0; split[n]; ++n) {
+    GroupMePodAddMember(account, pod, split[n]);
+  }
+  g_strfreev(split);
+}
+
+void
+GroupMePodAddMember(GroupMeAccount *account, 
+		     GroupMePod *pod, 
+		     gchar *member)
+{
+  const gchar *host;
+  gchar *postData;
+  gchar *url;
+  gchar *invites;
+  
+  GroupMeLogInfo("groupme", 
+		"PodInviteEmail(%s, %s)\n",
+		pod->id, member);
+  
+  host = GroupMeAccountHost(account);
+  url = g_strdup_printf("/api/pods/modifyPod");
+  // POST data:
+  // invites=[{"picked":["email"],"idents":["email"]}]
+  invites = g_strdup_printf("[{\"picked\":[\"%s\"],"
+			    "\"idents\":[\"%s\"]}]", 
+			    member,
+			    member);
+  postData = g_strdup_printf("v=3&token=%s&podid=%s&invites=%s", 
+			     account->token,
+  			     pod->id,
+  			     purple_url_encode(invites));
+  g_free(invites);
+  groupme_post_or_get(account, 
+		     GROUPME_METHOD_POST, 
+		     host, url, 
+		     postData, NULL, 
+		     NULL, FALSE);
+  g_free(postData);
+  g_free(url);  
+}
+
+void
+GroupMePodRemoveMembers(GroupMeAccount *account,
+		    GroupMePod *pod, 
+		    gchar *argsString)
+{
+  gchar **split;
+  int n;
+
+  GroupMeLogInfo("groupme", 
+		"PodRemoveMember(%s)\n",
+		pod->id);
+
+  split = g_strsplit(argsString, ",", 0);
+  for (n=0; split[n]; ++n) {
+    GroupMePodRemoveMember(account, pod, split[n]);
+  }
+  g_strfreev(split);
+}
+*/
