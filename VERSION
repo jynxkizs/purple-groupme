@@ -2,6 +2,19 @@
   "versions" :
     [
       { 
+	"status" : "beta",
+        "major" : 1,
+        "minor" : 1,
+        "revision" : 0,
+        "changes" : 
+          [
+	    "Remember what messages have already been shown on this computer",
+	    "Auto-split messages at new GroupMe message length limit (450)",
+	    ""
+	  ],
+	"svn-revision" : 18
+      },
+      { 
 	"status" : "stable",
         "major" : 1,
         "minor" : 0,

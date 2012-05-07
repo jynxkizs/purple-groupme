@@ -44,6 +44,7 @@ struct _GroupMePod {
   guint retryPollPodTimeout;
   guint catchupPodTimeout;
   gchar *photosPath;
+  //gchar *updatesPath;
 };
 
 GroupMePod *
@@ -51,6 +52,14 @@ GroupMePodNew();
 
 void
 GroupMePodFree(GroupMePod *pod);
+
+void
+GroupMePodReadLastUpdateIndex(GroupMeAccount *account,
+			      GroupMePod *pod);
+
+void
+GroupMePodWriteLastUpdateIndex(GroupMeAccount *account, 
+			       GroupMePod *pod);
 
 GroupMePod *
 GroupMePodFromHtml(const gchar *html, const gchar **htmlEnd);
@@ -95,5 +104,9 @@ GroupMePodImageFromPngData(GroupMeAccount *account,
 void
 GroupMePodGeneratePhotoPath(GroupMeAccount *account,
 			   GroupMePod *pod);
+
+//void
+//GroupMePodGenerateUpdatePath(GroupMeAccount *account,
+//			     GroupMePod *pod);
 
 #endif /* GROUPME_UPDATE_H */

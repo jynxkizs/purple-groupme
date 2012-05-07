@@ -84,6 +84,7 @@ GroupMeAccountAddPod(GroupMeAccount *account,
   g_hash_table_insert(account->pods, 
 		      pod->id, 
 		      pod);
+  GroupMePodReadLastUpdateIndex(account, pod);
 }
 
 void
@@ -131,14 +132,6 @@ GroupMeAccountV2Host(GroupMeAccount *account)
   		        GroupMeAccountHost(account));
   }
   return account->v2Host;
-}
-
-int
-GroupMeAccountSeedFetchCount(GroupMeAccount *account)
-{
-  return purple_account_get_int(account->account,
-				"seedFetchCount",
-				30);
 }
 
 const gchar *

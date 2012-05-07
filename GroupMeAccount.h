@@ -87,9 +87,6 @@ GroupMeAccountHost(GroupMeAccount *account);
 const gchar *
 GroupMeAccountV2Host(GroupMeAccount *account);
 
-int
-GroupMeAccountSeedFetchCount(GroupMeAccount *account);
-
 const gchar *
 GroupMeAccountLocationLinkText(GroupMeAccount *account);
 

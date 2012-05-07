@@ -31,12 +31,13 @@
 // constants
 #define BLIST_GROUP_NAME "GroupMe Chats"
 #define GROUPME_MIN_MSG_LENGTH   1
-#define GROUPME_MAX_MSG_LENGTH 160
+#define GROUPME_MAX_MSG_LENGTH 450
 
 // global variables
 gboolean gCheckedVersion = FALSE;
 
 // Forward Declarations
+void GH_WritePodSettings(gpointer key, gpointer value, gpointer user_data);
 PurpleGroup *GroupMeGetBuddyGroup();
 void GroupMeAddBuddy(GroupMeAccount *account, GroupMePod *pod);
 void GroupMeUpdateBuddy(GroupMeAccount *account, GroupMePod *pod);
@@ -69,7 +70,6 @@ void GroupMeLoginCB(GroupMeAccount *account, gchar const *requestUrl, gchar *htm
 void GroupMeSeedAccountCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
 void GroupMeMaybeAddNewPod(GroupMeAccount *account, GroupMePod *newPod);
 void GroupMeGetPodDetailsCB(GroupMeAccount *account, gchar const *requestUrl, gchar *data, gsize dataLen, gpointer userData);
-void GroupMeSeedPodCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
 void GroupMePodImageCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
 void GroupMePollNewUpdatesCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
 void GroupMeUpdateDetailsCB(GroupMeAccount *account, gchar const *requestUrl, gchar *html, gsize htmlLen, gpointer userData);
@@ -542,6 +542,11 @@ GroupMeDisconnect(GroupMeAccount *account)
 		"disabling account %s\n",
 		account->name);
 
+  // write out pod settins
+  g_hash_table_foreach(account->pods,
+		       GH_WritePodSettings,
+		       account);
+
   // send logout to server
   host = GroupMeAccountHost(account);
   groupme_post_or_get(account, 
@@ -590,6 +595,15 @@ GroupMeDisconnect(GroupMeAccount *account)
 
   // free the account
   GroupMeAccountFree(account);
+}
+
+void
+GH_WritePodSettings(gpointer key, 
+		    gpointer value, 
+		    gpointer user_data)
+{
+  GroupMePodWriteLastUpdateIndex((GroupMeAccount *)user_data,
+				 (GroupMePod *)value);
 }
 
 void
@@ -1008,76 +1022,25 @@ GroupMeSeedPod(GroupMeAccount *account, GroupMePod *pod)
   newRequest->account = account;
   newRequest->pod = pod;
   host = GroupMeAccountV2Host(account);
-  url = g_strdup_printf("/groups/%s/messages?token=%s", 
-			purple_url_encode(pod->id), 
-			account->token);
-  GroupMeLogInfo("groupme", "%s", url);
+  if (pod->lastUpdateId == -1) {
+    url = g_strdup_printf("/groups/%s/messages?token=%s", 
+			  purple_url_encode(pod->id), 
+			  account->token);
+  } else {
+    url = g_strdup_printf("/groups/%s/messages?token=%s&since_id=%d", 
+			  purple_url_encode(pod->id), 
+			  account->token,
+			  pod->lastUpdateId);
+  }
+  GroupMeLogInfo("groupme", "SeedPodUrl: %s", url);
   pod->pollOutstanding = TRUE;
   groupme_post_or_get(account, 
 		      GROUPME_METHOD_GET | 
 		      GROUPME_METHOD_SSL, 
 		      host, url,
-		      //NULL, GroupMeSeedPodCB, 
 		      NULL, GroupMePollNewUpdatesCB,
 		      newRequest, TRUE);
   g_free(url);
-}
-
-void 
-GroupMeSeedPodCB(GroupMeAccount *account, 
-		gchar const *requestUrl, 
-		gchar *data, gsize dataLen, 
-		gpointer userData)
-{
-  RequestData *request;
-  GroupMePod *pod;
-  GroupMeUpdate *newUpdate;
-  const gchar *html;
-  gint lastIndex;
-
-  request = (RequestData *)userData;
-  pod = request->pod;
-  g_free(request);
-
-  GroupMeLogInfo("groupme", 
-		"SeedPodCB(%s)\n",
-		pod->title);
-
-  html = data;
-  if (!html) {
-    GroupMeLogWarn("groupme", "bad seed response");
-    return;
-  }
-
-  // parse results
-  GroupMeDebugMsg(account, pod, "Got recent history results.");
-  // maybe should search for "realmessages" flag first
-  lastIndex = 0;
-  while ((newUpdate = GroupMeUpdateFromHtml(html, &html))) {
-    newUpdate->isDelayed = TRUE;
-    GroupMePodAppendUpdate(pod, newUpdate);
-    if (newUpdate->hasPhoto) {
-      GroupMeUpdateDetails(account,
-			   pod,
-			   newUpdate);
-    }
-    if (newUpdate->index > pod->lastUpdateId) {
-      pod->lastUpdateId = newUpdate->index;
-    }
-    lastIndex = newUpdate->index;
-  }
-
-  //if (pod->nextUpdateDisplayed == 0) {
-  //  pod->nextUpdateDisplayed = lastIndex;
-  //}
-
-  if (pod->nextUpdateDisplayed == 0) {
-    GroupMeHintMsg(account, pod, 
-		  "type /help to get a list of pod commands");
-  }
-
-  // display any new updates we may have gotten
-  GroupMeDisplayNewUpdates(account, pod);
 }
 
 void
@@ -1147,13 +1110,12 @@ GroupMePollNewUpdates(GroupMeAccount *account,
 			purple_url_encode(pod->id), 
 			account->token,
 			pod->lastUpdateId);
-  GroupMeLogInfo("groupme", "%s%s", host, url);
+  GroupMeLogInfo("groupme", "PollNewUpdatesUrl: %s%s", host, url);
   pod->pollOutstanding = TRUE;
   groupme_post_or_get(account, 
 		      GROUPME_METHOD_GET | 
 		      GROUPME_METHOD_SSL, 
 		      host, url,
-		      //NULL, GroupMeSeedPodCB, 
 		      NULL, GroupMePollNewUpdatesCB,
 		      newRequest, TRUE);
   g_free(url);
@@ -1186,7 +1148,7 @@ GroupMePollNewUpdatesCB(GroupMeAccount *account,
   GroupMeLogInfo("groupme", 
 		"PollNewUpdatesCB(%s)\n",
 		pod->title);
-  //GroupMeLogMisc("groupme", "response:\n%s", data);
+  GroupMeLogMisc("groupme", "PollNewUpdatesResponse:\n%s", data);
 
   // extend retry poll period
   if (pod->retryPollPodPeriod < 15) {
@@ -1257,6 +1219,11 @@ GroupMePollNewUpdatesCB(GroupMeAccount *account,
        json = json_object_seek(json_token_seek(json))) {
     
     newUpdate = GroupMeUpdateFromJson(json);
+    if (newUpdate->index <= pod->lastUpdateId) {
+      GroupMeUpdateFree(newUpdate);
+      continue;
+    }
+
     updates = g_list_prepend(updates, 
 			     (gpointer)newUpdate);
     if (newUpdate->hasPhoto) {
