@@ -32,51 +32,41 @@
 #define GROUPME_POD_IMAGES_DIR "plugins/purple-groupme/podimg"
 #define GROUPME_AVAILABLE  "ONLINE"
 
-#define GROUPME_CMD_NEW_POD "newchat"
-#define GROUPME_CMD_SET_POD_NAME "setchatname"
-#define GROUPME_CMD_SET_POD_LOCATION "setchatlocation"
-#define GROUPME_CMD_SET_POD_ADDRESS "setchataddress"
-#define GROUPME_CMD_SET_POD_TIME "setchattime"
+#define GROUPME_CMD_SET_NICK "nick"
+#define GROUPME_CMD_NEW_POD "newgroup"
+#define GROUPME_CMD_SET_POD_NAME "setgroupname"
+#define GROUPME_CMD_LEAVE_POD "leavegroup"
 #define GROUPME_CMD_ADD_MEMBER "addmember"
 #define GROUPME_CMD_REMOVE_MEMBER "removemember"
-#define GROUPME_CMD_LEAVE_POD "leavechat"
+
+#define GROUPME_CMD_SET_NICK_IE "i.e. /" GROUPME_CMD_SET_NICK \
+  " ken"
+#define GROUPME_CMD_SET_NICK_HELP GROUPME_CMD_SET_NICK \
+  ": "						       \
+  "sets your nickname in this group"		       \
+  GROUPME_CMD_SET_NICK_IE
 
 #define GROUPME_CMD_NEW_POD_IE "i.e. /" GROUPME_CMD_NEW_POD 
 #define GROUPME_CMD_NEW_POD_HELP GROUPME_CMD_NEW_POD \
-  ": "						   \
-  "creates a new chat"
+  ": "						     \
+  "creates a new group"				     \
+  GROUPME_CMD_POD_IE
+
 #define GROUPME_CMD_SET_POD_NAME_IE "i.e. /" GROUPME_CMD_SET_POD_NAME \
   " Dinner Tonight!"
 #define GROUPME_CMD_SET_POD_NAME_HELP GROUPME_CMD_SET_POD_NAME \
   " <i>Name</i>"					     \
   ": "							     \
-  "sets this chat's name to <i>Name</i>"			     \
+  "sets this group's name to <i>Name</i>"		     \
   "\n"							     \
   GROUPME_CMD_SET_POD_NAME_IE
-#define GROUPME_CMD_SET_POD_LOCATION_IE "i.e. /" GROUPME_CMD_SET_POD_LOCATION \
-  " Bob's Big Boy"
-#define GROUPME_CMD_SET_POD_LOCATION_HELP GROUPME_CMD_SET_POD_LOCATION \
-  " <i>Location</i>"						     \
-  ": "								     \
-  "sets this chat's location to <i>Location</i>"			     \
-  "\n"								     \
-  GROUPME_CMD_SET_POD_LOCATION_IE
-#define GROUPME_CMD_SET_POD_ADDRESS_IE "i.e. /" GROUPME_CMD_SET_POD_ADDRESS \
-  " 2104 Main Street, 90210"
-#define GROUPME_CMD_SET_POD_ADDRESS_HELP	GROUPME_CMD_SET_POD_ADDRESS \
-  " <i>Address</i>"						   \
-  ": "								   \
-  "sets this chat's location address to <i>Address</i>"		   \
-  "\n"								   \
-  GROUPME_CMD_SET_POD_ADDRESS_IE
-#define GROUPME_CMD_SET_POD_TIME_IE "i.e. /" GROUPME_CMD_SET_POD_TIME \
-  " Jul 30, 2012 8:00 PM"
-#define GROUPME_CMD_SET_POD_TIME_HELP GROUPME_CMD_SET_POD_TIME \
-  " <i>Time</i>"					     \
-  ": "							     \
-  "sets this chat's time to <i>Time</i>" 		     \
-  "\n"							     \
-  GROUPME_CMD_SET_POD_TIME_IE
+
+#define GROUPME_CMD_LEAVE_POD_IE "i.e. /" GROUPME_CMD_LEAVE_POD 
+#define GROUPME_CMD_LEAVE_POD_HELP GROUPME_CMD_LEAVE_POD \
+  ": "							 \
+  "leave this group"					 \
+  GROUPME_CMD_LEAVE_POD_IE
+
 #define GROUPME_CMD_ADD_MEMBER_IE "i.e. /" GROUPME_CMD_ADD_MEMBER \
   " jennifer@friend.net"
 #define GROUPME_CMD_ADD_MEMBER_HELP GROUPME_CMD_ADD_MEMBER \
@@ -85,6 +75,7 @@
   "adds <i>email</i> to this chat"			 \
   "\n"							 \
   GROUPME_CMD_ADD_MEMBER_IE
+
 #define GROUPME_CMD_REMOVE_MEMBER_IE "i.e. /" GROUPME_CMD_REMOVE_MEMBER \
   " jennifer"
 #define GROUPME_CMD_REMOVE_MEMBER_HELP GROUPME_CMD_REMOVE_MEMBER \
@@ -93,10 +84,6 @@
   "removes <i>name</i> from this chat"			       \
   "\n"							       \
   GROUPME_CMD_REMOVE_MEMBER_IE
-#define GROUPME_CMD_LEAVE_POD_HELP GROUPME_CMD_LEAVE_POD \
-  ": "						       \
-  "leave the current chat"
-
 
 // Globals
 GSList *groupmeCmdIds = NULL;
@@ -129,6 +116,43 @@ groupme_statuses(PurpleAccount *account)
   
   purple_debug_info("groupme", "statuses return\n");
   return types;
+}
+
+PurpleCmdRet
+groupme_cmd_set_nick_cb(PurpleConversation *pc, 
+			const gchar *cmd,
+			gchar **args, 
+			gchar **error, 
+			void *userData)
+{
+  PurpleAccount *pa;
+  PurpleConnection *gc;
+  GroupMeAccount *account;
+  GroupMePod *pod;
+  const gchar *podId;
+
+  purple_debug_info("groupme", "cmd_set_nick_cb\n");
+
+  if (!args || !args[0]) {
+    (*error) = g_strdup(GROUPME_CMD_SET_NICK
+			": requires a new nick name "
+			"(" GROUPME_CMD_SET_NICK_IE ")");
+    return PURPLE_CMD_RET_FAILED;
+  }
+
+  pa = pc->account;
+  gc = pa->gc;
+  account = (GroupMeAccount *)gc->proto_data;
+  podId = (const gchar *)purple_conversation_get_name(pc);
+  pod = GroupMeAccountGetPod(account, podId);
+  if (!pod) {
+    (*error) = g_strdup(GROUPME_CMD_SET_NICK
+			" command issued on non-existent group");
+    return PURPLE_CMD_RET_FAILED;
+  }
+  
+  GroupMePodSetNick(account, pod, args[0]);
+  return PURPLE_CMD_RET_OK;
 }
 
 PurpleCmdRet
@@ -168,7 +192,7 @@ groupme_cmd_set_pod_name_cb(PurpleConversation *pc,
 
   if (!args || !args[0]) {
     (*error) = g_strdup(GROUPME_CMD_SET_POD_NAME
-			": requires a new chat name "
+			": requires a new group name "
 			"(" GROUPME_CMD_SET_POD_NAME_IE ")");
     return PURPLE_CMD_RET_FAILED;
   }
@@ -189,11 +213,11 @@ groupme_cmd_set_pod_name_cb(PurpleConversation *pc,
 }
 
 PurpleCmdRet
-groupme_cmd_set_pod_location_cb(PurpleConversation *pc, 
-			       const gchar *cmd,
-			       gchar **args, 
-			       gchar **error, 
-			       void *userData)
+groupme_cmd_leave_cb(PurpleConversation *pc, 
+		    const gchar *cmd,
+		    gchar **args, 
+		    gchar **error, 
+		    void *userData)
 {
   PurpleAccount *pa;
   PurpleConnection *gc;
@@ -201,14 +225,7 @@ groupme_cmd_set_pod_location_cb(PurpleConversation *pc,
   GroupMePod *pod;
   const gchar *podId;
 
-  purple_debug_info("groupme", "cmd_set_pod_location_cb\n");
-
-  if (!args || !args[0]) {
-    (*error) = g_strdup(GROUPME_CMD_SET_POD_LOCATION
-			": requires a location "
-			"(" GROUPME_CMD_SET_POD_LOCATION_IE ")");
-    return PURPLE_CMD_RET_FAILED;
-  }
+  purple_debug_info("groupme", "cmd_leave_cb\n");
 
   pa = pc->account;
   gc = pa->gc;
@@ -216,49 +233,12 @@ groupme_cmd_set_pod_location_cb(PurpleConversation *pc,
   podId = (const gchar *)purple_conversation_get_name(pc);
   pod = GroupMeAccountGetPod(account, podId);
   if (!pod) {
-    (*error) = g_strdup(GROUPME_CMD_SET_POD_LOCATION
+    (*error) = g_strdup(GROUPME_CMD_LEAVE_POD
 			" command issued on non-existent chat");
     return PURPLE_CMD_RET_FAILED;
   }
   
-  GroupMePodSetLocation(account, pod, args[0]);
-  return PURPLE_CMD_RET_OK;
-}
-
-PurpleCmdRet
-groupme_cmd_set_pod_address_cb(PurpleConversation *pc, 
-			      const gchar *cmd,
-			      gchar **args, 
-			      gchar **error, 
-			      void *userData)
-{
-  PurpleAccount *pa;
-  PurpleConnection *gc;
-  GroupMeAccount *account;
-  GroupMePod *pod;
-  const gchar *podId;
-
-  purple_debug_info("groupme", "cmd_set_pod_address_cb\n");
-
-  if (!args || !args[0]) {
-    (*error) = g_strdup(GROUPME_CMD_SET_POD_ADDRESS
-			": requires an address "
-			"(" GROUPME_CMD_SET_POD_ADDRESS_IE ")");
-    return PURPLE_CMD_RET_FAILED;
-  }
-
-  pa = pc->account;
-  gc = pa->gc;
-  account = (GroupMeAccount *)gc->proto_data;
-  podId = (const gchar *)purple_conversation_get_name(pc);
-  pod = GroupMeAccountGetPod(account, podId);
-  if (!pod) {
-    (*error) = g_strdup(GROUPME_CMD_SET_POD_ADDRESS 
-			"command issued on non-existent chat");
-    return PURPLE_CMD_RET_FAILED;
-  }
-  
-  GroupMePodSetAddress(account, pod, args[0]);
+  GroupMePodLeave(account, pod);
   return PURPLE_CMD_RET_OK;
 }
 
@@ -336,36 +316,6 @@ groupme_cmd_remove_cb(PurpleConversation *pc,
   return PURPLE_CMD_RET_OK;
 }
 
-PurpleCmdRet
-groupme_cmd_leave_cb(PurpleConversation *pc, 
-		    const gchar *cmd,
-		    gchar **args, 
-		    gchar **error, 
-		    void *userData)
-{
-  PurpleAccount *pa;
-  PurpleConnection *gc;
-  GroupMeAccount *account;
-  GroupMePod *pod;
-  const gchar *podId;
-
-  purple_debug_info("groupme", "cmd_leave_cb\n");
-
-  pa = pc->account;
-  gc = pa->gc;
-  account = (GroupMeAccount *)gc->proto_data;
-  podId = (const gchar *)purple_conversation_get_name(pc);
-  pod = GroupMeAccountGetPod(account, podId);
-  if (!pod) {
-    (*error) = g_strdup(GROUPME_CMD_LEAVE_POD
-			" command issued on non-existent chat");
-    return PURPLE_CMD_RET_FAILED;
-  }
-  
-  GroupMePodLeave(account, pod);
-  return PURPLE_CMD_RET_OK;
-}
-
 static void 
 groupme_blist_node_menu_edit_pod_cb(PurpleBlistNode *node, 
 				   gpointer userData) 
@@ -383,19 +333,19 @@ groupme_blist_node_menu_edit_pod_cb(PurpleBlistNode *node,
   account = (GroupMeAccount *)userData;
   pod = (GroupMePod *)(PURPLE_BUDDY(node)->proto_data);
   GroupMeHintMsg(account, pod, 
-		"type /help to get a list of chat commands");
+		"type /help to get a list of group commands");
   GroupMeHintMsg(account, pod, 
 		"type /help <i>commandname</i> for help "
 		"with a specific command.");
 
   purple_notify_message(groupmePlugin, 
 			PURPLE_NOTIFY_MSG_INFO, 
-			"Edit Chat Help",
-                        "Editing chats is accomplished via\n"
+			"Edit Group Help",
+                        "Editing groups is accomplished via\n"
 			" /commands within the IM window.",
-			"    " GROUPME_CMD_SET_POD_NAME_IE "\n"
-			"    " GROUPME_CMD_SET_POD_LOCATION_IE "\n"
-			"    " GROUPME_CMD_ADD_MEMBER_IE "\n", 
+			"    " GROUPME_CMD_SET_NICK_IE "\n" 
+			"    " GROUPME_CMD_SET_POD_NAME_IE "\n" 
+			"    " GROUPME_CMD_LEAVE_POD_IE "\n", 
 			NULL, 
 			NULL);
 }
@@ -437,14 +387,14 @@ groupme_blist_node_menu(PurpleBlistNode *node)
   account = purple_buddy_get_account(PURPLE_BUDDY(node));
 
   // Edit Pod Action
-  action = purple_menu_action_new("Edit Chat", 
+  action = purple_menu_action_new("Edit Group", 
 				  PURPLE_CALLBACK(groupme_blist_node_menu_edit_pod_cb),
 				  (gpointer)account->gc->proto_data,
 				  NULL);  //children
   actions = g_list_append(actions, action);
 
   // Leave Action
-  action = purple_menu_action_new("Leave Chat", 
+  action = purple_menu_action_new("Leave Group", 
 				  PURPLE_CALLBACK(groupme_blist_node_menu_leave_cb),
 				  (gpointer)account->gc->proto_data,
 				  NULL);  //children
@@ -472,6 +422,7 @@ groupme_action_home_page_cb(PurplePluginAction *action)
   purple_notify_uri(groupmePlugin, GROUPME_HOMEPAGE);
 }
 
+/*
 static void
 groupme_action_create_pod_cb(PurplePluginAction *action)
 {
@@ -483,6 +434,7 @@ groupme_action_create_pod_cb(PurplePluginAction *action)
   account = (GroupMeAccount *)pc->proto_data;
   GroupMeCreatePod(account);
 }
+*/
 
 static void
 groupme_action_check_new_pods_cb(PurplePluginAction *action)
@@ -504,12 +456,13 @@ plugin_actions(PurplePlugin *plugin, gpointer context)
 
   purple_debug_info("groupme", "plugin_actions\n");
 
-  action = purple_plugin_action_new("Create a New Chat", 
+  /* new group unimplemented
+  action = purple_plugin_action_new("Create a New Group", 
 				    groupme_action_create_pod_cb);
   action->context = context;
   list = g_list_append(list, action);
 
-  action = purple_plugin_action_new("Check for New Chats (NOW!)", 
+  action = purple_plugin_action_new("Check for New Groups (NOW!)", 
 				    groupme_action_check_new_pods_cb);
   action->context = context;
   list = g_list_append(list, action);
@@ -524,6 +477,7 @@ plugin_actions(PurplePlugin *plugin, gpointer context)
   action->context = context;
   list = g_list_append(list, action);
 
+  */
   return list;
 }
 
@@ -586,10 +540,24 @@ static gboolean plugin_load(PurplePlugin *plugin)
 
   purple_debug_info("groupme", "load\n");
   groupmePlugin = plugin;
-
+return TRUE;
   // register commands
+  id = purple_cmd_register(GROUPME_CMD_SET_NICK,
+			   "s",  /* args */
+			   PURPLE_CMD_P_PRPL, 
+			   PURPLE_CMD_FLAG_IM | 
+			   PURPLE_CMD_FLAG_PRPL_ONLY | 
+			   PURPLE_CMD_FLAG_ALLOW_WRONG_ARGS |
+			   0,
+			   GROUPME_PRPL_ID, 
+			   (PurpleCmdFunc)groupme_cmd_set_nick_cb, 
+			   GROUPME_CMD_SET_NICK_HELP,
+			   (void *)NULL); /* userData */
+  groupmeCmdIds = g_slist_append(groupmeCmdIds, (gpointer)id);
+
+  /* new pod unimplemented 
   id = purple_cmd_register(GROUPME_CMD_NEW_POD,
-			   "",  /* args */
+			   "",  // args
 			   PURPLE_CMD_P_PRPL, 
 			   PURPLE_CMD_FLAG_IM | 
 			   PURPLE_CMD_FLAG_PRPL_ONLY | 
@@ -598,8 +566,9 @@ static gboolean plugin_load(PurplePlugin *plugin)
 			   GROUPME_PRPL_ID, 
 			   (PurpleCmdFunc)groupme_cmd_new_pod_cb, 
 			   GROUPME_CMD_NEW_POD_HELP,
-			   (void *)NULL); /* userData */
+			   (void *)NULL); // userData
   groupmeCmdIds = g_slist_append(groupmeCmdIds, (gpointer)id);
+  */
 
   id = purple_cmd_register(GROUPME_CMD_SET_POD_NAME,
 			   "s",  /* args */
@@ -614,58 +583,6 @@ static gboolean plugin_load(PurplePlugin *plugin)
 			   (void *)NULL); /* userData */
   groupmeCmdIds = g_slist_append(groupmeCmdIds, (gpointer)id);
 
-  id = purple_cmd_register(GROUPME_CMD_SET_POD_LOCATION,
-			   "s",  /* args */
-			   PURPLE_CMD_P_PRPL, 
-			   PURPLE_CMD_FLAG_IM | 
-			   PURPLE_CMD_FLAG_PRPL_ONLY | 
-			   PURPLE_CMD_FLAG_ALLOW_WRONG_ARGS |
-			   0,
-			   GROUPME_PRPL_ID, 
-			   (PurpleCmdFunc)groupme_cmd_set_pod_location_cb, 
-			   GROUPME_CMD_SET_POD_LOCATION_HELP,
-			   (void *)NULL); /* userData */
-  groupmeCmdIds = g_slist_append(groupmeCmdIds, (gpointer)id);
-
-  id = purple_cmd_register(GROUPME_CMD_SET_POD_ADDRESS,
-			   "s",  /* args */
-			   PURPLE_CMD_P_PRPL, 
-			   PURPLE_CMD_FLAG_IM | 
-			   PURPLE_CMD_FLAG_PRPL_ONLY | 
-			   PURPLE_CMD_FLAG_ALLOW_WRONG_ARGS |
-			   0,
-			   GROUPME_PRPL_ID, 
-			   (PurpleCmdFunc)groupme_cmd_set_pod_address_cb,
-			   GROUPME_CMD_SET_POD_ADDRESS_HELP,
-			   (void *)NULL); /* userData */
-  groupmeCmdIds = g_slist_append(groupmeCmdIds, (gpointer)id);
-
-  id = purple_cmd_register(GROUPME_CMD_ADD_MEMBER,
-			   "s",  /* args */
-			   PURPLE_CMD_P_PRPL, 
-			   PURPLE_CMD_FLAG_IM | 
-			   PURPLE_CMD_FLAG_PRPL_ONLY | 
-			   PURPLE_CMD_FLAG_ALLOW_WRONG_ARGS |
-			   0,
-			   GROUPME_PRPL_ID, 
-			   (PurpleCmdFunc)groupme_cmd_add_cb, 
-			   GROUPME_CMD_ADD_MEMBER_HELP,
-			   (void *)NULL); /* userData */
-  groupmeCmdIds = g_slist_append(groupmeCmdIds, (gpointer)id);
-
-  /* id = purple_cmd_register(GROUPME_CMD_REMOVE_MEMBER, */
-  /* 			   "",  /\* args *\/ */
-  /* 			   PURPLE_CMD_P_PRPL,  */
-  /* 			   PURPLE_CMD_FLAG_IM |  */
-  /* 			   PURPLE_CMD_FLAG_PRPL_ONLY |  */
-  /* 			   PURPLE_CMD_FLAG_ALLOW_WRONG_ARGS | */
-  /* 			   0, */
-  /* 			   GROUPME_PRPL_ID,  */
-  /* 			   (PurpleCmdFunc)groupme_cmd_remove_cb,  */
-  /* 			   GROUPME_CMD_REMOVE_MEMBER_HELP, */
-  /* 			   (void *)NULL); /\* userData *\/ */
-  /* groupmeCmdIds = g_slist_append(groupmeCmdIds, (gpointer)id); */
-
   id = purple_cmd_register(GROUPME_CMD_LEAVE_POD,
 			   "",  /* args */
 			   PURPLE_CMD_P_PRPL, 
@@ -678,6 +595,35 @@ static gboolean plugin_load(PurplePlugin *plugin)
 			   GROUPME_CMD_LEAVE_POD_HELP,
 			   (void *)NULL); /* userData */
   groupmeCmdIds = g_slist_append(groupmeCmdIds, (gpointer)id);
+
+  /* add member unimplemented
+  id = purple_cmd_register(GROUPME_CMD_ADD_MEMBER,
+			   "s",  // args
+			   PURPLE_CMD_P_PRPL, 
+			   PURPLE_CMD_FLAG_IM | 
+			   PURPLE_CMD_FLAG_PRPL_ONLY | 
+			   PURPLE_CMD_FLAG_ALLOW_WRONG_ARGS |
+			   0,
+			   GROUPME_PRPL_ID, 
+			   (PurpleCmdFunc)groupme_cmd_add_cb, 
+			   GROUPME_CMD_ADD_MEMBER_HELP,
+			   (void *)NULL); // userData
+  groupmeCmdIds = g_slist_append(groupmeCmdIds, (gpointer)id);
+  */
+
+  /* remove member unimplemented */
+  /* id = purple_cmd_register(GROUPME_CMD_REMOVE_MEMBER, */
+  /* 			   "",  /\* args *\/ */
+  /* 			   PURPLE_CMD_P_PRPL,  */
+  /* 			   PURPLE_CMD_FLAG_IM |  */
+  /* 			   PURPLE_CMD_FLAG_PRPL_ONLY |  */
+  /* 			   PURPLE_CMD_FLAG_ALLOW_WRONG_ARGS | */
+  /* 			   0, */
+  /* 			   GROUPME_PRPL_ID,  */
+  /* 			   (PurpleCmdFunc)groupme_cmd_remove_cb,  */
+  /* 			   GROUPME_CMD_REMOVE_MEMBER_HELP, */
+  /* 			   (void *)NULL); /\* userData *\/ */
+  /* groupmeCmdIds = g_slist_append(groupmeCmdIds, (gpointer)id); */
 
   return TRUE;
 }
@@ -703,6 +649,7 @@ static void plugin_init(PurplePlugin *plugin)
   
   purple_debug_info("groupme", "init\n");
 
+return;
   option = purple_account_option_string_new("Host", "host", "groupme.com");
   prpl_info->protocol_options = g_list_append(prpl_info->protocol_options, option);
   

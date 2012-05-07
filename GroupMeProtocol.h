@@ -44,19 +44,14 @@ void
 GroupMeCheckNewPods(GroupMeAccount *account);
 
 void
+GroupMePodSetNick(GroupMeAccount *account,
+		 GroupMePod *pod,
+		 const gchar *nick);
+
+void
 GroupMePodSetName(GroupMeAccount *account,
 		 GroupMePod *pod,
 		 const gchar *name);
-
-void
-GroupMePodSetLocation(GroupMeAccount *account,
-		     GroupMePod *pod,
-		     const gchar *location);
-
-void
-GroupMePodSetAddress(GroupMeAccount *account,
-		    GroupMePod *pod,
-		    const gchar *address);
 
 void
 GroupMePodAddMembers(GroupMeAccount *account, 

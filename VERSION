@@ -8,11 +8,14 @@
         "revision" : 0,
         "changes" : 
           [
-	    "Remember what messages have already been shown on this computer",
+	    "Only display messages which have not been shown on this computer yet",
 	    "Auto-split messages at new GroupMe message length limit (450)",
+	    "/setnick <name> sets your nickname in current group",
+	    "/setgroupname <name> renames current group",
+	    "/leavegroup leaves current group",
 	    ""
 	  ],
-	"svn-revision" : 18
+	"svn-revision" : 21
       },
       { 
 	"status" : "stable",
